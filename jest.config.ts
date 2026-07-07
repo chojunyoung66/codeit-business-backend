@@ -3,9 +3,27 @@
  * https://jestjs.io/docs/configuration
  */
 
-import type {Config} from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
+  // Treat .ts files as ESM to match the project's "type": "module" setting
+  extensionsToTreatAsEsm: [".ts"],
+
+  // Strip the .js extension from relative imports so ts-jest can resolve the .ts source
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+  },
+
+  // Run .ts files through ts-jest in ESM mode
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { useESM: true }],
+  },
+
+  testEnvironment: "node",
+
+  // Load .env variables (e.g. JWT_SECRET) before running tests
+  setupFiles: ["dotenv/config"],
+
   // All imported modules in your tests should be mocked automatically
   // automock: false,
 
@@ -13,7 +31,7 @@ const config: Config = {
   // bail: 0,
 
   // The directory where Jest should store its cached dependency information
-  // cacheDirectory: "/private/var/folders/wd/y6m_v2k15g12gwgqrfvckkrh0000gn/T/jest_dx",
+  // cacheDirectory: "/private/var/folders/yh/9yzxdm2956bdp_2rqqxgz7pm0000gn/T/jest_dx",
 
   // Automatically clear mock calls, instances, contexts and results before every test
   clearMocks: true,

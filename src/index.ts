@@ -4,9 +4,9 @@ import cors from "cors";
 import authController from "./controllers/auth.controller.js";
 import memoController from "./controllers/memo.controller.js";
 import userController from "./controllers/user.controller.js";
+import { prismaClient } from "./db/prisma.js";
 
 const app = express();
-const port = 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -21,6 +21,20 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+const server = app.listen(3000, () => {
+  console.log(`Example app listening on port ${3000}`);
 });
+
+// 우아한 종료 처리
+const gracefulShutdown = async () => {
+  console.log("서버 종료 시작...");
+  server.close(async () => {
+    console.log("HTTP 서버 종료됨");
+    await prismaClient.$disconnect();
+    console.log("Prisma 연결 종료됨");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
