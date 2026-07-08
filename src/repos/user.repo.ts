@@ -1,6 +1,7 @@
-import { PrismaClient } from "../generated/prisma/client.js";
+import { prismaClient } from "../db/prisma.js";
+import { UserRepo } from "../services/contracts/user.repo.interface.js";
 
-export const createUserRepo = (prismaClient: PrismaClient) => {
+export const createUserRepo = (): UserRepo => {
   const findUserByEmail = async (email: string) => {
     const foundUser = await prismaClient.user.findUnique({
       where: { email: email },

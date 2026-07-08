@@ -1,6 +1,9 @@
-import { User } from "../generated/prisma/client.js";
 import type { UserRepo } from "./contracts/user.repo.interface.js";
-import type { SignJwt, AuthService } from "./contracts/auth.service.interface.js";
+import type {
+  SignJwt,
+  SignUpParams,
+  AuthService,
+} from "./contracts/auth.service.interface.js";
 
 export const createAuthService = (userRepo: UserRepo, signJwt: SignJwt): AuthService => {
   const signInService = async (params: { email: string; password: string }) => {
@@ -16,5 +19,24 @@ export const createAuthService = (userRepo: UserRepo, signJwt: SignJwt): AuthSer
     return token;
   };
 
-  return { signInService };
+  const signUpService = async (params: SignUpParams) => {
+    const { email, password, username } = params;
+
+    const existingUser = await userRepo.findUserByEmail(email);
+    if (existingUser) {
+      throw new Error("이미 등록된 이메일입니다.");
+    }
+
+    const newUser = await userRepo.createUser({
+      email,
+      password,
+      username,
+    });
+
+    const token = signJwt({ userId: (newUser as any).id }, 3600);
+
+    return token;
+  };
+
+  return { signInService, signUpService };
 };

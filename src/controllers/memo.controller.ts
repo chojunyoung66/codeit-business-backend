@@ -1,10 +1,9 @@
 import { Router, Request, Response } from "express";
 import { createArticleRepo } from "../repos/article.repo.js";
-import { prismaClient } from "../db/prisma.js";
 
 const router = Router();
 
-const articleRepo = createArticleRepo(prismaClient);
+const articleRepo = createArticleRepo();
 
 router.get("/", async (_req: Request, res: Response) => {
   const articles = await articleRepo.findAll();

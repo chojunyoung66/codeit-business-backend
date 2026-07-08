@@ -7,4 +7,12 @@ export const signInDataSchema = z.object({
     .min(4, { message: "비밀번호는 4자 이상이어야 합니다 ." }),
 });
 
+export const signUpDataSchema = signInDataSchema.extend({
+  username: z
+    .string({ message: "사용자 이름은 문자열이어야 합니다." })
+    .min(1, { message: "사용자 이름은 비워둘 수 없습니다." })
+    .optional(),
+});
+
 export type SignInData = z.infer<typeof signInDataSchema>;
+export type SignUpData = z.infer<typeof signUpDataSchema>;

@@ -1,6 +1,6 @@
-import { PrismaClient } from "../generated/prisma/client.js";
+import { prismaClient } from "../db/prisma.js";
 
-export const createArticleRepo = (prismaClient: PrismaClient) => {
+export const createArticleRepo = () => {
   const findAll = async () => {
     return prismaClient.article.findMany({ orderBy: { createdAt: "desc" } });
   };
