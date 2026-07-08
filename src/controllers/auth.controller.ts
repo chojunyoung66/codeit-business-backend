@@ -1,13 +1,20 @@
 import { Router, Request, Response } from "express";
 import { createAuthService } from "../services/auth.service.js";
 import { createUserRepo } from "../repos/user.repo.js";
-import { signJwt } from "../utils/jwt.util.js";
+import { createJwtUtil } from "../utils/jwt.util.js";
+import { createBcryptUtil } from "../utils/bcrypt.util.js";
 import { signInDataSchema, signUpDataSchema } from "../schemas/auth.schema.js";
 
 const router = Router();
 
 const userRepo = createUserRepo();
-const { signInService, signUpService } = createAuthService(userRepo, signJwt);
+const jwtUtil = createJwtUtil();
+const bcryptUtil = createBcryptUtil();
+const { signInService, signUpService } = createAuthService(
+  userRepo,
+  jwtUtil,
+  bcryptUtil,
+);
 
 router.post("/signin", async (req: Request, res: Response) => {
   const parsedBody = signInDataSchema.safeParse(req.body);
