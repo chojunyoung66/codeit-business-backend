@@ -13,6 +13,21 @@ export type SignJwt = (
   expiresIn: number,
 ) => string;
 
+export type AuthErrorCode =
+  | "INVALID_CREDENTIALS"
+  | "EMAIL_ALREADY_EXISTS"
+  | "DATABASE_ERROR";
+
+export class AuthServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly code: AuthErrorCode,
+  ) {
+    super(message);
+    this.name = "AuthServiceError";
+  }
+}
+
 export interface AuthService {
   signInService(params: SignInParams): Promise<string>;
   signUpService(params: SignUpParams): Promise<string>;

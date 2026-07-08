@@ -6,6 +6,7 @@ import type {
   SignInParams,
   AuthService,
 } from "./contracts/auth.service.interface.js";
+import { AuthServiceError } from "./contracts/auth.service.interface.js";
 
 export const createAuthService = (
   userRepo: UserRepo,
@@ -18,7 +19,11 @@ export const createAuthService = (
     // 사용자 정보 조회
     const foundUser = await userRepo.findUserByEmail(email);
     if (!foundUser) {
-      throw new Error("이메일 또는 비밀번호가 일치하지 않습니다");
+      // 보안: 이메일 미존재 여부 노출 방지, 같은 메시지 사용
+      throw new AuthServiceError(
+        "이메일 또는 비밀번호가 일치하지 않습니다",
+        "INVALID_CREDENTIALS",
+      );
     }
 
     // 저장된 비밀번호와 입력값을 비교한다
@@ -27,7 +32,10 @@ export const createAuthService = (
       foundUser.password,
     );
     if (!isPasswordValid) {
-      throw new Error("이메일 또는 비밀번호가 일치하지 않습니다");
+      throw new AuthServiceError(
+        "이메일 또는 비밀번호가 일치하지 않습니다",
+        "INVALID_CREDENTIALS",
+      );
     }
 
     // JWT 토큰 생성 및 반환
@@ -42,7 +50,10 @@ export const createAuthService = (
     // 중복 이메일 확인
     const existingUser = await userRepo.findUserByEmail(email);
     if (existingUser) {
-      throw new Error("이미 등록된 이메일입니다.");
+      throw new AuthServiceError(
+        "이미 등록된 이메일입니다.",
+        "EMAIL_ALREADY_EXISTS",
+      );
     }
 
     // 새 사용자를 생성하기 전에 비밀번호를 해시한다

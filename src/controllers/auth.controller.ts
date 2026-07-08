@@ -4,6 +4,7 @@ import { createUserRepo } from "../repos/user.repo.js";
 import { createJwtUtil } from "../utils/jwt.util.js";
 import { createBcryptUtil } from "../utils/bcrypt.util.js";
 import { signInDataSchema, signUpDataSchema } from "../schemas/auth.schema.js";
+import { AuthServiceError } from "../services/contracts/auth.service.interface.js";
 
 const router = Router();
 
@@ -25,10 +26,19 @@ router.post("/signin", async (req: Request, res: Response) => {
     });
   }
 
-  // 서비스 호출
-  const token = await signInService(parsedBody.data);
-
-  return res.json({ token });
+  try {
+    // 서비스 호출
+    const token = await signInService(parsedBody.data);
+    return res.json({ token });
+  } catch (error) {
+    if (error instanceof AuthServiceError) {
+      return res.status(401).json({
+        message: error.message,
+        code: error.code,
+      });
+    }
+    throw error;
+  }
 });
 
 router.post("/signup", async (req: Request, res: Response) => {
@@ -40,9 +50,19 @@ router.post("/signup", async (req: Request, res: Response) => {
     });
   }
 
-  const token = await signUpService(parsedBody.data);
-
-  return res.status(201).json({ token });
+  try {
+    const token = await signUpService(parsedBody.data);
+    return res.status(201).json({ token });
+  } catch (error) {
+    if (error instanceof AuthServiceError) {
+      const statusCode = error.code === "EMAIL_ALREADY_EXISTS" ? 409 : 400;
+      return res.status(statusCode).json({
+        message: error.message,
+        code: error.code,
+      });
+    }
+    throw error;
+  }
 });
 
 router.post("/signout", (req: Request, res: Response) => {
