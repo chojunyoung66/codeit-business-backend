@@ -2,6 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { BusinessException } from "../../shared/business.exception.js";
 import { TechnicalException } from "../../shared/technical.exception.js";
 
+export const notFoundMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  throw new BusinessException("존재하지 않는 api 요청입니다.");
+};
+
 export const errorMiddleware = (
   err: unknown,
   req: Request,

@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { errorMiddleware } from "./inbound/middlewares/error.middleware.js";
+import { errorMiddleware, notFoundMiddleware } from "./inbound/middlewares/error.middleware.js";
 import { bootstrap } from "./bootstrap.js";
 import helmet from "helmet";
 import rateLimiter from "express-rate-limit";
@@ -27,6 +27,8 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/memos", memoRouter);
+
+app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
 app.listen(3000, () => {
