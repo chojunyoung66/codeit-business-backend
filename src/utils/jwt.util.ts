@@ -6,7 +6,7 @@ export const createJwtUtil = (): JwtUtil => {
     return jwt.sign(data, process.env.JWT_SECRET as string, { expiresIn });
   };
 
-  const verify = (token: string): { userId: number } => {
+  const verify = (token: string): { userId: number; errorCode?: string } => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
         userId: number;
@@ -14,11 +14,34 @@ export const createJwtUtil = (): JwtUtil => {
       return decoded;
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
-        throw new Error("토큰이 만료되었습니다");
+        const err = new Error("토큰이 만료되었습니다");
+        (err as any).code = "JWT_EXPIRED";
+        throw err;
       } else if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error("유효하지 않은 토큰입니다");
+        // 서명 검증 실패
+        if (error.message.includes("invalid signature")) {
+          const err = new Error("토큰의 서명이 유효하지 않습니다");
+          (err as any).code = "JWT_INVALID_SIGNATURE";
+          throw err;
+        }
+        // 형식 오류
+        if (
+          error.message.includes("malformed") ||
+          error.message.includes("invalid token")
+        ) {
+          const err = new Error("토큰의 형식이 올바르지 않습니다");
+          (err as any).code = "JWT_MALFORMED";
+          throw err;
+        }
+        // 기타 JWT 오류
+        const err = new Error("유효하지 않은 토큰입니다");
+        (err as any).code = "JWT_VERIFICATION_ERROR";
+        throw err;
       }
-      throw error;
+      // 예상치 못한 에러
+      const err = new Error("토큰 검증 중 예기치 않은 오류가 발생했습니다");
+      (err as any).code = "JWT_VERIFICATION_ERROR";
+      throw err;
     }
   };
 

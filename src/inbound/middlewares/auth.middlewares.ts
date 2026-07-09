@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { createJwtUtil } from "../../utils/jwt.util.js";
 import { BusinessException } from "../../shared/business.exception.js";
 import { TechnicalException } from "../../shared/technical.exception.js";
+import {
+  TechnicalErrorCode,
+  technicalErrorMessages,
+} from "../../shared/technical-error.enum.js";
 
 declare global {
   namespace Express {
@@ -32,16 +36,34 @@ export const authMiddleware = (
     req.userId = decoded.userId;
     next();
   } catch (error) {
-    // JWT 검증 에러는 비즈니스 에러 (사용자의 잘못된 입력)
-    if (error instanceof Error) {
-      if (
-        error.message.includes("만료") ||
-        error.message.includes("유효하지 않은")
-      ) {
-        throw new BusinessException(error.message);
-      }
+    // 에러 코드 추출
+    const errorCode = (error as any)?.code;
+
+    // JWT 토큰 관련 기술적 에러는 TechnicalException으로 처리
+    if (
+      errorCode === "JWT_EXPIRED" ||
+      errorCode === "JWT_INVALID_SIGNATURE" ||
+      errorCode === "JWT_MALFORMED" ||
+      errorCode === "JWT_VERIFICATION_ERROR"
+    ) {
+      throw new TechnicalException(
+        error instanceof Error ? error.message : "토큰 검증 실패",
+        errorCode as TechnicalErrorCode,
+      );
     }
+
+    // JWT_SECRET이 없으면 설정 오류
+    if (!process.env.JWT_SECRET) {
+      throw new TechnicalException(
+        technicalErrorMessages[TechnicalErrorCode.JWT_SECRET_NOT_FOUND],
+        TechnicalErrorCode.JWT_SECRET_NOT_FOUND,
+      );
+    }
+
     // 예상치 못한 에러는 기술적 에러
-    throw new TechnicalException("인증 처리 중 오류가 발생했습니다.");
+    throw new TechnicalException(
+      technicalErrorMessages[TechnicalErrorCode.UNKNOWN_ERROR],
+      TechnicalErrorCode.UNKNOWN_ERROR,
+    );
   }
 };
