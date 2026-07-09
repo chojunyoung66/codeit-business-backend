@@ -3,10 +3,16 @@ import type { JwtUtil } from "../application/contracts/jwt.util.interface.js";
 
 export const createJwtUtil = (): JwtUtil => {
   const sign = (data: string | Buffer | object, expiresIn: number): string => {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET 환경변수가 설정되어 있지 않습니다.");
+    }
     return jwt.sign(data, process.env.JWT_SECRET as string, { expiresIn });
   };
 
   const verify = (token: string): { userId: number; errorCode?: string } => {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET 환경변수가 설정되어 있지 않습니다.");
+    }
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
         userId: number;
