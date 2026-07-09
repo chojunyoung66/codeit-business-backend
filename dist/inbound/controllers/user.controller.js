@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middlewares.js";
+const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 export const createUserController = (userRepo) => {
     const router = Router();
-    router.get("/me", authMiddleware, async (req, res) => {
+    router.get("/me", authMiddleware, asyncHandler(async (req, res) => {
         const user = await userRepo.findUserById(req.userId || 0);
         if (!user) {
             return res.status(404).json({
@@ -15,6 +16,6 @@ export const createUserController = (userRepo) => {
                 ...user,
             },
         });
-    });
+    }));
     return router;
 };
