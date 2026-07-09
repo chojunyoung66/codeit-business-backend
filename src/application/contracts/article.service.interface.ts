@@ -1,6 +1,6 @@
 import type { ArticleRepo } from "./article.repo.interface.js";
 import type { UserRepo } from "./user.repo.interface.js";
-import type { ForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
+import type { ContentPolicy } from "../../domain/content-policy/content.policy.interface.js";
 
 export type CreateArticleParams = {
   userId: number;
@@ -41,5 +41,5 @@ export interface ArticleService {
 export type CreateArticleService = (
   articleRepo: ArticleRepo,
   userRepo: UserRepo,
-  forbiddenWordsUtil: ForbiddenWordsUtil,
+  contentPolicy: ContentPolicy,
 ) => ArticleService;

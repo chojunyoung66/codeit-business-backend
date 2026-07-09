@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { createArticleRepo } from "../../outbound/repos/article.repo.js";
 import { createUserRepo } from "../../outbound/repos/user.repo.js";
 import { createArticleService } from "../../application/services/article.service.js";
-import { createForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
+import { createContentPolicy } from "../../domain/content-policy/content.policy.js";
 import {
   createArticleSchema,
   updateArticleSchema,
@@ -14,14 +14,14 @@ const router = Router();
 
 const articleRepo = createArticleRepo();
 const userRepo = createUserRepo();
-const forbiddenWordsUtil = createForbiddenWordsUtil();
+const contentPolicy = createContentPolicy();
 const {
   getArticles,
   getArticleById,
   createArticle,
   updateArticle,
   deleteArticle,
-} = createArticleService(articleRepo, userRepo, forbiddenWordsUtil);
+} = createArticleService(articleRepo, userRepo, contentPolicy);
 
 router.get("/", async (_req: Request, res: Response) => {
   try {

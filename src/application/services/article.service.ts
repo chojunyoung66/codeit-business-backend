@@ -6,12 +6,12 @@ import type {
 import { ArticleServiceError } from "../contracts/article.service.interface.js";
 import type { ArticleRepo } from "../contracts/article.repo.interface.js";
 import type { UserRepo } from "../contracts/user.repo.interface.js";
-import type { ForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
+import type { ContentPolicy } from "../../domain/content-policy/content.policy.interface.js";
 
 export const createArticleService = (
   articleRepo: ArticleRepo,
   userRepo: UserRepo,
-  forbiddenWordsUtil: ForbiddenWordsUtil,
+  contentPolicy: ContentPolicy,
 ): ArticleService => {
   const getArticles = async () => {
     // 모든 게시글 조회
@@ -44,8 +44,8 @@ export const createArticleService = (
 
     // 금칙어 필터링
     if (
-      forbiddenWordsUtil.containsForbiddenWord(title) ||
-      forbiddenWordsUtil.containsForbiddenWord(content)
+      contentPolicy.forbiddenWords.containsForbiddenWord(title) ||
+      contentPolicy.forbiddenWords.containsForbiddenWord(content)
     ) {
       throw new ArticleServiceError(
         "부적절한 단어가 포함되어 있습니다",

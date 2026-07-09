@@ -1,6 +1,6 @@
 import { describe, test, expect } from "@jest/globals";
 import { createArticleService } from "./article.service.js";
-import { createForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
+import { createContentPolicy } from "../../domain/content-policy/content.policy.js";
 import { createArticleRepoMock } from "../contracts/__mocks__/article.repo.mock.js";
 import { createUserRepoMock } from "../contracts/__mocks__/user.repo.mock.js";
 import type { Article, User } from "../../generated/prisma/client.js";
@@ -29,12 +29,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock(fakeArticles);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { getArticles } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const articles = await getArticles();
 
@@ -44,12 +44,12 @@ describe("게시글 서비스 테스트", () => {
     test("게시글이 없으면 빈 배열을 반환한다", async () => {
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { getArticles } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const articles = await getArticles();
 
@@ -70,12 +70,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([fakeArticle]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { getArticleById } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const article = await getArticleById(1);
 
@@ -86,12 +86,12 @@ describe("게시글 서비스 테스트", () => {
     test("게시글이 없으면 에러를 던진다", async () => {
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { getArticleById } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(getArticleById(999)).rejects.toThrow(
@@ -113,12 +113,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock([fakeUser]);
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { createArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const article = await createArticle({
         userId: 1,
@@ -134,12 +134,12 @@ describe("게시글 서비스 테스트", () => {
     test("사용자가 존재하지 않으면 에러를 던진다", async () => {
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock([]);
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { createArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(
@@ -163,12 +163,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock([fakeUser]);
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { createArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(
@@ -192,12 +192,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock([fakeUser]);
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { createArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(
@@ -214,12 +214,12 @@ describe("게시글 서비스 테스트", () => {
     test("게시글이 없으면 에러를 던진다", async () => {
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { updateArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(
@@ -239,12 +239,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([fakeArticle]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { updateArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const result = await updateArticle({ id: 1, title: "수정된 제목" });
 
@@ -264,12 +264,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([fakeArticle]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { updateArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
       const result = await updateArticle({ id: 1, content: "수정된 내용" });
 
@@ -282,12 +282,12 @@ describe("게시글 서비스 테스트", () => {
     test("게시글이 없으면 에러를 던진다", async () => {
       const articleRepo = createArticleRepoMock([]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { deleteArticle } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await expect(deleteArticle(999)).rejects.toThrow(
@@ -307,12 +307,12 @@ describe("게시글 서비스 테스트", () => {
 
       const articleRepo = createArticleRepoMock([fakeArticle]);
       const userRepo = createUserRepoMock();
-      const forbiddenWordsUtil = createForbiddenWordsUtil();
+      const contentPolicy = createContentPolicy();
 
       const { deleteArticle, getArticles } = createArticleService(
         articleRepo,
         userRepo,
-        forbiddenWordsUtil,
+        contentPolicy,
       );
 
       await deleteArticle(1);
