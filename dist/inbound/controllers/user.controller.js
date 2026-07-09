@@ -4,7 +4,12 @@ export const createUserController = (userRepo) => {
     const router = Router();
     router.get("/me", authMiddleware, async (req, res) => {
         const user = await userRepo.findUserById(req.userId || 0);
-        res.json({
+        if (!user) {
+            return res.status(404).json({
+                message: "사용자를 찾을 수 없습니다.",
+            });
+        }
+        return res.json({
             me: {
                 userId: req.userId,
                 ...user,

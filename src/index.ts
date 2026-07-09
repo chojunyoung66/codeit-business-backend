@@ -27,10 +27,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan("combined")); // 요청 로그를 콘솔에 출력-- development 환경에서는 "dev"로 변경 가능
-app.use("/test", (_req: Request, _res: Response, next: NextFunction) => {
-  console.log("test middleware");
-  next();
-});
 
 app.use("/api/auth", authController);
 app.use("/api/users", userController);
