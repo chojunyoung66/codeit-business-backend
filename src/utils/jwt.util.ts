@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { JwtUtil } from "../services/contracts/jwt.util.interface.js";
+import type { JwtUtil } from "../application/contracts/jwt.util.interface.js";
 
 export const createJwtUtil = (): JwtUtil => {
   const sign = (data: string | Buffer | object, expiresIn: number): string => {

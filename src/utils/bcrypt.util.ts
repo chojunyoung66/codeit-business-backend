@@ -1,5 +1,5 @@
 import * as bcrypt from "bcrypt";
-import type { BcryptUtil } from "../services/contracts/bcrypt.util.interface.js";
+import type { BcryptUtil } from "../application/contracts/bcrypt.util.interface.js";
 
 export const createBcryptUtil = (): BcryptUtil => {
   const hash = async (
