@@ -52,6 +52,7 @@ describe("인증 서비스 테스트", () => {
       // 가짜 데이터를 주입해서 가상의 프로세스 검증
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -83,6 +84,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -127,6 +129,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -174,6 +177,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -205,6 +209,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -249,6 +254,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -297,6 +303,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -353,6 +360,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -411,6 +419,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -454,6 +463,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -486,6 +496,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -529,6 +540,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -585,6 +597,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -640,6 +653,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -698,6 +712,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -754,6 +769,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -809,6 +825,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -868,6 +885,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -923,6 +941,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -977,6 +996,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -1035,6 +1055,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -1091,6 +1112,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: fakeCreateUser,
           updateUser: jest.fn() as any,
@@ -1128,6 +1150,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signUpService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -1176,6 +1199,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,
@@ -1223,6 +1247,7 @@ describe("인증 서비스 테스트", () => {
 
       const { signInService } = createAuthService(
         {
+          findUserById: jest.fn() as any,
           findUserByEmail: fakeFindUserByEmail,
           createUser: jest.fn() as any,
           updateUser: jest.fn() as any,

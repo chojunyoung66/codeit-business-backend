@@ -1,6 +1,7 @@
 import type { User } from "../../generated/prisma/client.js";
 
 export interface UserRepo {
+  findUserById(id: number): Promise<{ id: number; email: string } | null>;
   findUserByEmail(email: string): Promise<User | null>;
   createUser(data: {
     email: string;

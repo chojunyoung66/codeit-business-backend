@@ -1,6 +1,12 @@
 export const createUserRepoMock = (initialUsers) => {
     const users = initialUsers ? [...initialUsers] : [];
     return {
+        findUserById: async (id) => {
+            const user = users.find((u) => u.id === id);
+            if (!user)
+                return null;
+            return { id: user.id, email: user.email };
+        },
         findUserByEmail: async (email) => users.find((u) => u.email === email) ?? null,
         createUser: async (data) => {
             const id = users.length ? users[users.length - 1].id + 1 : 1;

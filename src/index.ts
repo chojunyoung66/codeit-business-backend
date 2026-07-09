@@ -2,18 +2,32 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import morgan from "morgan";
-import authController from "./inbound/controllers/auth.controller.js";
+import { createAuthController } from "./inbound/controllers/auth.controller.js";
 import memoController from "./inbound/controllers/memo.controller.js";
-import userController from "./inbound/controllers/user.controller.js";
+import { createUserController } from "./inbound/controllers/user.controller.js";
+import { createAuthService } from "./application/services/auth.service.js";
+import { createUserRepo } from "./outbound/repos/user.repo.js";
+import { createJwtUtil } from "./utils/jwt.util.js";
+import { createBcryptUtil } from "./utils/bcrypt.util.js";
 import { BusinessException } from "./shared/business.exception.js";
 import { TechnicalException } from "./shared/technical.exception.js";
+
+// 의존성 생성 (DI Container 역할)
+const userRepo = createUserRepo();
+const jwtUtil = createJwtUtil();
+const bcryptUtil = createBcryptUtil();
+const authService = createAuthService(userRepo, jwtUtil, bcryptUtil);
+
+// 컨트롤러 생성
+const authController = createAuthController(authService);
+const userController = createUserController(userRepo);
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan("combined")); // 요청 로그를 콘솔에 출력-- development 환경에서는 "dev"로 변경 가능
-app.use("/test", (req: Request, res: Response, next: NextFunction) => {
+app.use("/test", (_req: Request, _res: Response, next: NextFunction) => {
   console.log("test middleware");
   next();
 });

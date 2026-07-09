@@ -1,5 +1,12 @@
 import { prismaClient } from "../../db/prisma.js";
 export const createUserRepo = () => {
+    const findUserById = async (id) => {
+        const foundUser = await prismaClient.user.findUnique({
+            where: { id },
+            select: { id: true, email: true },
+        });
+        return foundUser;
+    };
     const findUserByEmail = async (email) => {
         const foundUser = await prismaClient.user.findUnique({
             where: { email: email },
@@ -27,6 +34,7 @@ export const createUserRepo = () => {
         return deletedUser;
     };
     return {
+        findUserById,
         findUserByEmail,
         createUser,
         updateUser,

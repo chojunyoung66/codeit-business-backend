@@ -38,6 +38,7 @@ describe("인증 서비스 테스트", () => {
             };
             // 가짜 데이터를 주입해서 가상의 프로세스 검증
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -62,6 +63,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -94,6 +96,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -129,6 +132,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -152,6 +156,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -184,6 +189,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -220,6 +226,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -260,6 +267,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -303,6 +311,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -337,6 +346,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -360,6 +370,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -388,6 +399,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -428,6 +440,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -467,6 +480,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -510,6 +524,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -552,6 +567,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -592,6 +608,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -636,6 +653,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -676,6 +694,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -715,6 +734,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -758,6 +778,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -799,6 +820,7 @@ describe("인증 서비스 테스트", () => {
                     .mockResolvedValue("$2a$10$hashedPasswordFromBcryptUtil1234567890"),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: fakeCreateUser,
                 updateUser: jest.fn(),
@@ -828,6 +850,7 @@ describe("인증 서비스 테스트", () => {
                     .mockRejectedValue(new Error("bcrypt 해시 실패")),
             };
             const { signUpService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -864,6 +887,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
@@ -900,6 +924,7 @@ describe("인증 서비스 테스트", () => {
                 hash: jest.fn(),
             };
             const { signInService } = createAuthService({
+                findUserById: jest.fn(),
                 findUserByEmail: fakeFindUserByEmail,
                 createUser: jest.fn(),
                 updateUser: jest.fn(),
