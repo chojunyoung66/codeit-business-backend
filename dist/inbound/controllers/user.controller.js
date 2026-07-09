@@ -13,4 +13,3 @@ export const createUserController = (userRepo) => {
     });
     return router;
 };
-export default createUserController(null);

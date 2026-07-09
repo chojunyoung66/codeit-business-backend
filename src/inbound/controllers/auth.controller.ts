@@ -33,5 +33,3 @@ export const createAuthController = (authService: AuthService) => {
 
   return router;
 };
-
-export default createAuthController(null as any);

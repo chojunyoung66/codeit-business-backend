@@ -25,4 +25,3 @@ export const createAuthController = (authService) => {
     });
     return router;
 };
-export default createAuthController(null);

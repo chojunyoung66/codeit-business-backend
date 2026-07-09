@@ -17,5 +17,3 @@ export const createUserController = (userRepo: UserRepo) => {
 
   return router;
 };
-
-export default createUserController(null as any);
