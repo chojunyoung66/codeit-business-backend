@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from "express";
+import { createJwtUtil } from "../../utils/jwt.util.js";
+import { BusinessException } from "../../shared/business.exception.js";
+import { TechnicalException } from "../../shared/technical.exception.js";
 
 declare global {
   namespace Express {
@@ -16,18 +19,29 @@ export const authMiddleware = (
   // 헤더에서 토큰 추출
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      message: "인증 토큰이 필요합니다.",
-    });
+    // 토큰이 없으면 비즈니스 에러
+    throw new BusinessException("인증 토큰이 필요합니다.");
   }
 
   const token = authHeader.substring(7);
 
-  // 토큰 검증 (jwt.verify 기능 구현 필요)
-  // 임시로 토큰이 있으면 userId를 추출하여 요청에 추가
-  if (token) {
-    req.userId = parseInt(req.headers["user-id"] as string) || 1;
+  try {
+    // JWT 토큰 검증
+    const jwtUtil = createJwtUtil();
+    const decoded = jwtUtil.verify(token);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    // JWT 검증 에러는 비즈니스 에러 (사용자의 잘못된 입력)
+    if (error instanceof Error) {
+      if (
+        error.message.includes("만료") ||
+        error.message.includes("유효하지 않은")
+      ) {
+        throw new BusinessException(error.message);
+      }
+    }
+    // 예상치 못한 에러는 기술적 에러
+    throw new TechnicalException("인증 처리 중 오류가 발생했습니다.");
   }
-
-  next();
 };

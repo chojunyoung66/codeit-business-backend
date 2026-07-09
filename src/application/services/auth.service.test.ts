@@ -39,7 +39,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest
           .fn<
@@ -162,7 +162,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest
           .fn<
@@ -285,7 +285,7 @@ describe("인증 서비스 테스트", () => {
           .mockImplementation(() => {
             throw new Error("JWT 서명 실패");
           }),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest
           .fn<
@@ -343,7 +343,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -401,7 +401,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue("token123"),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -575,7 +575,7 @@ describe("인증 서비스 테스트", () => {
           .mockImplementation(() => {
             throw new Error("JWT 서명 실패");
           }),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -630,7 +630,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -688,7 +688,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -744,7 +744,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue("token123"),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -799,7 +799,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -858,7 +858,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -913,7 +913,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -967,7 +967,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue("token123"),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -1025,7 +1025,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue("token123"),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -1081,7 +1081,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest.fn(),
         hash: jest
@@ -1164,7 +1164,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest
           .fn<
@@ -1211,7 +1211,7 @@ describe("인증 서비스 테스트", () => {
         sign: jest
           .fn<(data: string | Buffer | object, expiresIn: number) => string>()
           .mockReturnValue(fakeToken),
-      } as JwtUtil;
+      } as unknown as JwtUtil;
       const fakeBcryptUtil = {
         compare: jest
           .fn<
