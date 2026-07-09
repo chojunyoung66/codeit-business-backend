@@ -1,9 +1,15 @@
 import jwt from "jsonwebtoken";
 export const createJwtUtil = () => {
     const sign = (data, expiresIn) => {
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET 환경변수가 설정되어 있지 않습니다.");
+        }
         return jwt.sign(data, process.env.JWT_SECRET, { expiresIn });
     };
     const verify = (token) => {
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET 환경변수가 설정되어 있지 않습니다.");
+        }
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             return decoded;
