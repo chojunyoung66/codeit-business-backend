@@ -1,4 +1,6 @@
 import type { ArticleRepo } from "./article.repo.interface.js";
+import type { UserRepo } from "./user.repo.interface.js";
+import type { ForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
 
 export type CreateArticleParams = {
   userId: number;
@@ -12,7 +14,11 @@ export type UpdateArticleParams = {
   content?: string;
 };
 
-export type ArticleErrorCode = "ARTICLE_NOT_FOUND" | "DATABASE_ERROR";
+export type ArticleErrorCode =
+  | "ARTICLE_NOT_FOUND"
+  | "DATABASE_ERROR"
+  | "USER_NOT_FOUND"
+  | "FORBIDDEN_WORD_DETECTED";
 
 export class ArticleServiceError extends Error {
   constructor(
@@ -32,4 +38,8 @@ export interface ArticleService {
   deleteArticle(id: number): Promise<void>;
 }
 
-export type CreateArticleService = (articleRepo: ArticleRepo) => ArticleService;
+export type CreateArticleService = (
+  articleRepo: ArticleRepo,
+  userRepo: UserRepo,
+  forbiddenWordsUtil: ForbiddenWordsUtil,
+) => ArticleService;

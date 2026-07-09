@@ -5,9 +5,13 @@ import type {
 } from "../contracts/article.service.interface.js";
 import { ArticleServiceError } from "../contracts/article.service.interface.js";
 import type { ArticleRepo } from "../contracts/article.repo.interface.js";
+import type { UserRepo } from "../contracts/user.repo.interface.js";
+import type { ForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
 
 export const createArticleService = (
   articleRepo: ArticleRepo,
+  userRepo: UserRepo,
+  forbiddenWordsUtil: ForbiddenWordsUtil,
 ): ArticleService => {
   const getArticles = async () => {
     // 모든 게시글 조회
@@ -27,6 +31,28 @@ export const createArticleService = (
   };
 
   const createArticle = async (params: CreateArticleParams) => {
+    const { userId, title, content } = params;
+
+    // 사용자 존재여부 확인
+    const user = await userRepo.findUserById(userId);
+    if (!user) {
+      throw new ArticleServiceError(
+        "사용자를 찾을 수 없습니다",
+        "USER_NOT_FOUND",
+      );
+    }
+
+    // 금칙어 필터링
+    if (
+      forbiddenWordsUtil.containsForbiddenWord(title) ||
+      forbiddenWordsUtil.containsForbiddenWord(content)
+    ) {
+      throw new ArticleServiceError(
+        "부적절한 단어가 포함되어 있습니다",
+        "FORBIDDEN_WORD_DETECTED",
+      );
+    }
+
     // 새로운 게시글 생성
     return articleRepo.createArticle(params);
   };

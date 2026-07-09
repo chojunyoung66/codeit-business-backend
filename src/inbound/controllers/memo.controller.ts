@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { createArticleRepo } from "../../outbound/repos/article.repo.js";
+import { createUserRepo } from "../../outbound/repos/user.repo.js";
 import { createArticleService } from "../../application/services/article.service.js";
+import { createForbiddenWordsUtil } from "../../utils/forbidden-words.util.js";
 import {
   createArticleSchema,
   updateArticleSchema,
@@ -11,13 +13,15 @@ import { authMiddleware } from "../middlewares/auth.middlewares.js";
 const router = Router();
 
 const articleRepo = createArticleRepo();
+const userRepo = createUserRepo();
+const forbiddenWordsUtil = createForbiddenWordsUtil();
 const {
   getArticles,
   getArticleById,
   createArticle,
   updateArticle,
   deleteArticle,
-} = createArticleService(articleRepo);
+} = createArticleService(articleRepo, userRepo, forbiddenWordsUtil);
 
 router.get("/", async (_req: Request, res: Response) => {
   try {
