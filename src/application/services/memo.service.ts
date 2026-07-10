@@ -49,12 +49,32 @@ export const createMemoService = (
       updateData.content = params.content;
     }
 
-    const memo = await memoRepo.updateMemo(params.id, updateData);
-    return memo;
+    try {
+      const memo = await memoRepo.updateMemo(params.id, updateData);
+      return memo;
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("No record was found")
+      ) {
+        throw new MemoServiceError("메모를 찾을 수 없습니다.", "MEMO_NOT_FOUND");
+      }
+      throw error;
+    }
   };
 
   const deleteMemo = async (id: number) => {
-    await memoRepo.deleteMemo(id);
+    try {
+      await memoRepo.deleteMemo(id);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("No record was found")
+      ) {
+        throw new MemoServiceError("메모를 찾을 수 없습니다.", "MEMO_NOT_FOUND");
+      }
+      throw error;
+    }
   };
 
   return {
