@@ -1,87 +1,111 @@
-import type {
-  MemoService,
-  CreateMemoService,
-  CreateMemoParams,
-  UpdateMemoParams,
-} from "../contracts/memo.service.interface.js";
-import { MemoServiceError } from "../contracts/memo.service.interface.js";
-import type { MemoRepo } from "../contracts/memo.repo.interface.js";
-import type { UserRepo } from "../contracts/user.repo.interface.js";
+import { IMemoRepo } from "../contracts/memo-repo.contract.js";
+import { IUserRepo } from "../contracts/user-repo.contract.js";
+import { BusinessException } from "../../shared/exceptions/business.exception.js";
+import { containsForbiddenKeyword } from "../domain/memo.js";
 
 export const createMemoService = (
-  memoRepo: MemoRepo,
-  userRepo: UserRepo,
-): MemoService => {
-  const getMemos = async (userId: number) => {
-    const memos = await memoRepo.findAll(userId);
+  findByUserId: IMemoRepo["findByUserId"],
+  create: IMemoRepo["create"],
+  findUserById: IUserRepo["findUserById"],
+  findById: IMemoRepo["findById"],
+  update: IMemoRepo["update"],
+  delete_: IMemoRepo["delete"],
+) => {
+  // 사용자의 모든 메모 조회
+  const getMyMemos = async (userId: number) => {
+    const memos = await findByUserId(userId);
     return memos;
   };
 
-  const getMemoById = async (id: number) => {
-    const memo = await memoRepo.findById(id);
-    if (!memo) {
-      throw new MemoServiceError("메모를 찾을 수 없습니다.", "MEMO_NOT_FOUND");
+  // 새로운 메모 생성
+  const createMemo = async (params: {
+    userId: number;
+    title: string;
+    content: string;
+  }) => {
+    // 금칙어 검증
+    if (containsForbiddenKeyword(params.title, params.content)) {
+      throw new BusinessException("게시글을 작성할 수 없습니다.");
     }
-    return memo;
-  };
 
-  const createMemo = async (params: CreateMemoParams) => {
-    // 사용자 존재 여부 확인
-    const user = await userRepo.findUserById(params.userId);
+    // 사용자 존재 확인
+    const user = await findUserById(params.userId);
     if (!user) {
-      throw new MemoServiceError(
-        "사용자를 찾을 수 없습니다.",
-        "USER_NOT_FOUND",
-      );
+      throw new BusinessException("존재하지 않는 유저입니다.");
     }
 
-    const memo = await memoRepo.createMemo(params);
-    return memo;
+    const newMemo = await create(params);
+    return newMemo;
   };
 
-  const updateMemo = async (params: UpdateMemoParams) => {
-    // 메모 필터링: undefined 값은 제외
-    const updateData: { title?: string; content?: string } = {};
-    if (params.title !== undefined) {
-      updateData.title = params.title;
-    }
-    if (params.content !== undefined) {
-      updateData.content = params.content;
+  // 메모 업데이트
+  const updateMemo = async (params: {
+    memoId: number;
+    userId: number;
+    title?: string;
+    content?: string;
+  }) => {
+    // 메모 존재 확인
+    const memo = await findById(params.memoId);
+    if (!memo) {
+      throw new BusinessException("존재하지 않는 메모입니다.");
     }
 
-    try {
-      const memo = await memoRepo.updateMemo(params.id, updateData);
-      return memo;
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("No record was found")
-      ) {
-        throw new MemoServiceError("메모를 찾을 수 없습니다.", "MEMO_NOT_FOUND");
-      }
-      throw error;
+    // 소유자 확인
+    if (memo.userId !== params.userId) {
+      throw new BusinessException("메모를 수정할 권한이 없습니다.");
     }
+
+    // 메모 작성자 존재 확인
+    const memoAuthor = await findUserById(memo.userId);
+    if (!memoAuthor) {
+      throw new BusinessException("존재하지 않는 유저입니다.");
+    }
+
+    // 금칙어 검증
+    const title = params.title ?? memo.title;
+    const content = params.content ?? memo.content;
+    if (containsForbiddenKeyword(title, content)) {
+      throw new BusinessException("게시글을 작성할 수 없습니다.");
+    }
+
+    // 메모 업데이트
+    const updatedMemo = await update({
+      id: params.memoId,
+      title: params.title,
+      content: params.content,
+    });
+    return updatedMemo;
   };
 
-  const deleteMemo = async (id: number) => {
-    try {
-      await memoRepo.deleteMemo(id);
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("No record was found")
-      ) {
-        throw new MemoServiceError("메모를 찾을 수 없습니다.", "MEMO_NOT_FOUND");
-      }
-      throw error;
+  // 메모 삭제
+  const deleteMemo = async (params: {
+    memoId: number;
+    userId: number;
+  }) => {
+    // 메모 존재 확인
+    const memo = await findById(params.memoId);
+    if (!memo) {
+      throw new BusinessException("존재하지 않는 메모입니다.");
     }
+
+    // 소유자 확인
+    if (memo.userId !== params.userId) {
+      throw new BusinessException("메모를 삭제할 권한이 없습니다.");
+    }
+
+    // 메모 작성자 존재 확인
+    const memoAuthor = await findUserById(memo.userId);
+    if (!memoAuthor) {
+      throw new BusinessException("존재하지 않는 유저입니다.");
+    }
+
+    // 메모 삭제
+    const deletedMemo = await delete_(params.memoId);
+    return deletedMemo;
   };
 
-  return {
-    getMemos,
-    getMemoById,
-    createMemo,
-    updateMemo,
-    deleteMemo,
-  };
+  return { getMyMemos, createMemo, updateMemo, deleteMemo };
 };
+
+export type MemoServiceType = ReturnType<typeof createMemoService>;

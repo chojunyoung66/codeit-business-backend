@@ -11,23 +11,25 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  username  String?
-  password  String
-  articles  Article[]
-  memos     Memo[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                    Int                      @id @default(autoincrement())
+  email                 String                   @unique
+  username              String?
+  password              String
+  articles              Article[]
+  memos                 Memo[]
+  userRecommendedArticles UserRecommendedArticle[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 }
 
 model Article {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  title     String
-  content   String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      Int                      @id @default(autoincrement())
+  userId                  Int
+  title                   String
+  content                 String
+  createdAt               DateTime                 @default(now())
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userRecommendedArticles UserRecommendedArticle[]
 }
 
 model Memo {
@@ -37,5 +39,20 @@ model Memo {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  //onDelete: Cascade
+  //1. Cascade: When a user is deleted, all their memos will also be deleted.
+  //2. Set Null: When a user is deleted, the userId field in their memos will be set to null.
+  //3. Restrict: Prevent deletion of a user if they have associated memos.
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserRecommendedArticle {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  articleId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+//사용자당 게시글 추천은 한 번만 가능하도록 unique 제약 조건을 추가합니다.
+  @@unique([userId, articleId])
 }
