@@ -1,57 +1,55 @@
-import { prismaClient } from "../../db/prisma.js";
-import type { UserRepo } from "../../application/contracts/user.repo.interface.js";
+import { IUserRepo } from "../../application/contracts/user-repo.contract.js";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import {
+  TechnicalException,
+  TechnicalExceptionCode,
+} from "../../shared/exceptions/technical.exception.js";
+import { prismaClient } from "./prismaClient.js";
 
-export const createUserRepo = (): UserRepo => {
-  const findUserById = async (id: number) => {
-    const foundUser = await prismaClient.user.findUnique({
-      where: { id },
-      select: { id: true, email: true },
-    });
-    return foundUser;
-  };
-
-  const findUserByEmail = async (email: string) => {
-    const foundUser = await prismaClient.user.findUnique({
-      where: { email: email },
-    });
-    console.log(foundUser);
-    return foundUser;
-  };
-
-  const createUser = async (data: {
-    email: string;
-    password: string;
-    username?: string;
-  }) => {
-    const newUser = await prismaClient.user.create({
-      data,
-    });
-    return newUser;
-  };
-
-  const updateUser = async (
-    id: number,
-    data: { username?: string; password?: string },
+export const createUserRepo = (): IUserRepo => {
+  // 이메일로 사용자 조회
+  const findUserByEmail: IUserRepo["findUserByEmail"] = async (
+    email: string,
   ) => {
-    const updatedUser = await prismaClient.user.update({
-      where: { id },
-      data,
+    const foundUser = await prismaClient.user.findUnique({
+      where: { email },
     });
-    return updatedUser;
+    return foundUser;
   };
 
-  const deleteUser = async (id: number) => {
-    const deletedUser = await prismaClient.user.delete({
+  // ID로 사용자 조회
+  const findUserById: IUserRepo["findUserById"] = async (id: number) => {
+    const foundUser = await prismaClient.user.findUnique({
       where: { id },
     });
-    return deletedUser;
+    return foundUser;
   };
 
-  return {
-    findUserById,
-    findUserByEmail,
-    createUser,
-    updateUser,
-    deleteUser,
+  // 사용자 생성
+  const createUser: IUserRepo["createUser"] = async (params) => {
+    try {
+      const newUser = await prismaClient.user.create({
+        data: {
+          email: params.email,
+          password: params.password,
+          username: params.username,
+        },
+      });
+
+      return newUser;
+    } catch (err) {
+      if (err instanceof PrismaClientKnownRequestError) {
+        if (err.code === "P2002") {
+          throw new TechnicalException(
+            err.message,
+            TechnicalExceptionCode.EMAIL_DUPLICATED,
+          );
+        }
+      }
+
+      throw err;
+    }
   };
+
+  return { findUserByEmail, findUserById, createUser };
 };

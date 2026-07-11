@@ -1,13 +1,23 @@
 import { IMemoRepo } from "../../application/contracts/memo-repo.contract.js";
-import { prismaClient } from "./prismaClinet.js";
+import { prismaClient } from "./prismaClient.js";
 
 export const createMemoRepo = (): IMemoRepo => {
-  const findByUserId: IMemoRepo["findByUserId"] = async (userId: number) => {
+  const findAll: IMemoRepo["findAll"] = async (userId: number) => {
     const memos = await prismaClient.article.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
+      include: {
+        _count: { select: { recommendedBy: true } },
+        user: { select: { username: true } },
+        recommendedBy: { where: { userId }, select: { id: true } },
+      },
     });
-    return memos;
+
+    return memos.map(({ _count, user, recommendedBy, ...memo }) => ({
+      ...memo,
+      recommendCount: _count.recommendedBy,
+      username: user.username,
+      isRecommended: recommendedBy.length > 0,
+    }));
   };
 
   const create: IMemoRepo["create"] = async (params) => {
@@ -39,12 +49,12 @@ export const createMemoRepo = (): IMemoRepo => {
     return updatedMemo;
   };
 
-  const delete_: IMemoRepo["delete"] = async (id: number) => {
+  const deleteMemo: IMemoRepo["delete"] = async (id: number) => {
     const deletedMemo = await prismaClient.article.delete({
       where: { id },
     });
     return deletedMemo;
   };
 
-  return { findByUserId, create, findById, update, delete: delete_ };
+  return { findAll, create, findById, update, delete: deleteMemo };
 };

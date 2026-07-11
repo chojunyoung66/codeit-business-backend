@@ -1,38 +1,46 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { signInDataSchema, signUpDataSchema } from "../schemas/auth.schema.js";
-import { BusinessException } from "../../shared/business.exception.js";
-import type { AuthService } from "../../application/contracts/auth.service.interface.js";
+import { z } from "zod";
+import { AuthServiceType } from "../../application/services/auth.service.js";
+import { signInDataSchema, signUpDataSchema } from "../schemas/auth.schemas.js";
+import { BusinessException } from "../../shared/exceptions/business.exception.js";
 
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
-  (req: Request, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
-
-export const createAuthController = (authService: AuthService) => {
-  const { signInService, signUpService } = authService;
+export const createAuthController = (
+  signIn: AuthServiceType["signIn"],
+  signUp: AuthServiceType["signUp"],
+) => {
   const router = Router();
 
-  router.post("/signin", asyncHandler(async (req: Request, res: Response) => {
-    const parsedBody = signInDataSchema.safeParse(req.body);
-    if (!parsedBody.success) {
-      throw new BusinessException("요청 값이 올바르지 않습니다.");
-    }
+  router.post(
+    "/signin",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { success, data, error } = signInDataSchema.safeParse(req.body);
+      if (success === false) {
+        throw new BusinessException(z.prettifyError(error));
+      }
 
-    const token = await signInService(parsedBody.data);
-    return res.json({ token });
-  }));
+      const token = await signIn(data);
 
-  router.post("/signup", asyncHandler(async (req: Request, res: Response) => {
-    const parsedBody = signUpDataSchema.safeParse(req.body);
-    if (!parsedBody.success) {
-      throw new BusinessException("요청 값이 올바르지 않습니다.");
-    }
+      return res.json({ token });
+    },
+  );
 
-    const token = await signUpService(parsedBody.data);
-    return res.status(201).json({ token });
-  }));
+  router.post(
+    "/signup",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { success, data, error } = signUpDataSchema.safeParse(req.body);
+      if (success === false) {
+        throw new BusinessException(z.prettifyError(error));
+      }
 
-  router.post("/signout", (_req: Request, res: Response) => {
+      const token = await signUp(data);
+
+      return res.json({ token });
+    },
+  );
+
+  router.post("/signout", (req: Request, res: Response, next: NextFunction) => {
     return res.json({});
   });
 
-  return router;
+  return { router };
 };

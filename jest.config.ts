@@ -21,9 +21,6 @@ const config: Config = {
 
   testEnvironment: "node",
 
-  // Only run tests from src directory to avoid duplicate mock warnings
-  testMatch: ["<rootDir>/src/**/*.test.ts", "<rootDir>/src/**/*.spec.ts"],
-
   // Load .env variables (e.g. JWT_SECRET) before running tests
   setupFiles: ["dotenv/config"],
 

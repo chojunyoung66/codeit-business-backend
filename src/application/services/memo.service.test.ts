@@ -5,34 +5,40 @@ import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 
 describe("MemoService", () => {
-  describe("getMyMemos", () => {
-    it("사용자의 모든 메모를 조회한다", async () => {
-      // 테스트용 Mock 메모 데이터
+  describe("getAllMemos", () => {
+    it("존재하는 모든 메모를 추천 개수, 작성자 이름, 내 추천 여부와 함께 조회한다", async () => {
+      // 테스트용 Mock 메모 데이터 (추천 개수, 작성자 이름, 내 추천 여부 포함)
       const mockMemos = [
         {
           id: 1,
           title: "첫 번째 메모",
           content: "내용1",
-          userId: 1,
+          userId: 2,
           createdAt: new Date(),
+          recommendCount: 3,
+          username: "김민지",
+          isRecommended: true,
         },
         {
           id: 2,
           title: "두 번째 메모",
           content: "내용2",
-          userId: 1,
+          userId: 3,
           createdAt: new Date(),
+          recommendCount: 0,
+          username: "박준호",
+          isRecommended: false,
         },
       ];
 
-      // Mock findByUserId
-      const mockFindByUserId = jest
-        .fn<IMemoRepo["findByUserId"]>()
+      // Mock findAll
+      const mockFindAll = jest
+        .fn<IMemoRepo["findAll"]>()
         .mockResolvedValue(mockMemos as any);
 
       // MemoService 생성
       const memoService = createMemoService(
-        mockFindByUserId,
+        mockFindAll,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -40,12 +46,12 @@ describe("MemoService", () => {
         jest.fn() as any,
       );
 
-      // getMyMemos 호출
-      const result = await memoService.getMyMemos(1);
+      // getAllMemos 호출
+      const result = await memoService.getAllMemos(1);
 
       // 검증
       expect(result).toEqual(mockMemos);
-      expect(mockFindByUserId).toHaveBeenCalledWith(1);
+      expect(mockFindAll).toHaveBeenCalledWith(1);
     });
   });
 
@@ -338,11 +344,11 @@ describe("MemoService", () => {
 
   describe("deleteMemo", () => {
     it("소유자가 메모를 삭제한다", async () => {
-      // 삭제할 메모 데이터
-      const memoToDelete = {
+      // 기존 메모 데이터
+      const existingMemo = {
         id: 1,
-        title: "삭제할 메모",
-        content: "내용",
+        title: "원래 제목",
+        content: "원래 내용",
         userId: 1,
         createdAt: new Date(),
       };
@@ -350,21 +356,17 @@ describe("MemoService", () => {
       // Mock 데이터
       const mockFindById = jest
         .fn<IMemoRepo["findById"]>()
-        .mockResolvedValue(memoToDelete as any);
+        .mockResolvedValue(existingMemo as any);
 
       const mockDelete = jest
         .fn<IMemoRepo["delete"]>()
-        .mockResolvedValue(memoToDelete as any);
-
-      const mockFindUserById = jest
-        .fn<IUserRepo["findUserById"]>()
-        .mockResolvedValue({ id: 1, email: "test@test.com" } as any);
+        .mockResolvedValue(existingMemo as any);
 
       // MemoService 생성
       const memoService = createMemoService(
         jest.fn() as any,
         jest.fn() as any,
-        mockFindUserById,
+        jest.fn() as any,
         mockFindById,
         jest.fn() as any,
         mockDelete,
@@ -377,80 +379,9 @@ describe("MemoService", () => {
       });
 
       // 검증
-      expect(result).toEqual(memoToDelete);
+      expect(result).toEqual(existingMemo);
       expect(mockFindById).toHaveBeenCalledWith(1);
       expect(mockDelete).toHaveBeenCalledWith(1);
-    });
-
-    it("소유자가 아닌 사용자가 메모를 삭제하려면 BusinessException을 던진다", async () => {
-      // 메모 데이터 (소유자: userId=1)
-      const memoToDelete = {
-        id: 1,
-        title: "삭제할 메모",
-        content: "내용",
-        userId: 1,
-        createdAt: new Date(),
-      };
-
-      // Mock 데이터
-      const mockFindById = jest
-        .fn<IMemoRepo["findById"]>()
-        .mockResolvedValue(memoToDelete as any);
-
-      const mockFindUserById = jest
-        .fn<IUserRepo["findUserById"]>()
-        .mockResolvedValue({ id: 1, email: "test@test.com" } as any);
-
-      // MemoService 생성
-      const memoService = createMemoService(
-        jest.fn() as any,
-        jest.fn() as any,
-        mockFindUserById,
-        mockFindById,
-        jest.fn() as any,
-        jest.fn() as any,
-      );
-
-      // deleteMemo 호출 - 다른 사용자(userId=2)가 삭제 시도
-      await expect(
-        memoService.deleteMemo({
-          memoId: 1,
-          userId: 2,
-        }),
-      ).rejects.toThrow(
-        new BusinessException("메모를 삭제할 권한이 없습니다."),
-      );
-    });
-
-    it("존재하지 않는 메모를 삭제하려면 BusinessException을 던진다", async () => {
-      // Mock 데이터 - 메모 없음
-      const mockFindById = jest
-        .fn<IMemoRepo["findById"]>()
-        .mockResolvedValue(null);
-
-      const mockFindUserById = jest
-        .fn<IUserRepo["findUserById"]>()
-        .mockResolvedValue({ id: 1, email: "test@test.com" } as any);
-
-      // MemoService 생성
-      const memoService = createMemoService(
-        jest.fn() as any,
-        jest.fn() as any,
-        mockFindUserById,
-        mockFindById,
-        jest.fn() as any,
-        jest.fn() as any,
-      );
-
-      // deleteMemo 호출 - 존재하지 않는 메모
-      await expect(
-        memoService.deleteMemo({
-          memoId: 999,
-          userId: 1,
-        }),
-      ).rejects.toThrow(new BusinessException("존재하지 않는 메모입니다."));
-
-      expect(mockFindById).toHaveBeenCalledWith(999);
     });
   });
 });

@@ -9,7 +9,7 @@ import { BusinessException } from "../../shared/exceptions/business.exception.js
 import z from "zod";
 
 export const createMemoController = (
-  getMyMemos: MemoServiceType["getMyMemos"],
+  getAllMemos: MemoServiceType["getAllMemos"],
   createMemo: MemoServiceType["createMemo"],
   updateMemo: MemoServiceType["updateMemo"],
   deleteMemo: MemoServiceType["deleteMemo"],
@@ -21,7 +21,7 @@ export const createMemoController = (
     "/",
     authMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
-      const memos = await getMyMemos(req.userId!);
+      const memos = await getAllMemos(req.userId!);
       res.json({ memos });
     },
   );

@@ -4,16 +4,16 @@ import { BusinessException } from "../../shared/exceptions/business.exception.js
 import { containsForbiddenKeyword } from "../domain/memo.js";
 
 export const createMemoService = (
-  findByUserId: IMemoRepo["findByUserId"],
+  findAll: IMemoRepo["findAll"],
   create: IMemoRepo["create"],
   findUserById: IUserRepo["findUserById"],
   findById: IMemoRepo["findById"],
   update: IMemoRepo["update"],
-  delete_: IMemoRepo["delete"],
+  deleteMemoRepo: IMemoRepo["delete"],
 ) => {
-  // 사용자의 모든 메모 조회
-  const getMyMemos = async (userId: number) => {
-    const memos = await findByUserId(userId);
+  // 존재하는 모든 메모를 추천 개수, 내 추천 여부와 함께 조회
+  const getAllMemos = async (userId: number) => {
+    const memos = await findAll(userId);
     return memos;
   };
 
@@ -79,10 +79,7 @@ export const createMemoService = (
   };
 
   // 메모 삭제
-  const deleteMemo = async (params: {
-    memoId: number;
-    userId: number;
-  }) => {
+  const deleteMemo = async (params: { memoId: number; userId: number }) => {
     // 메모 존재 확인
     const memo = await findById(params.memoId);
     if (!memo) {
@@ -94,18 +91,11 @@ export const createMemoService = (
       throw new BusinessException("메모를 삭제할 권한이 없습니다.");
     }
 
-    // 메모 작성자 존재 확인
-    const memoAuthor = await findUserById(memo.userId);
-    if (!memoAuthor) {
-      throw new BusinessException("존재하지 않는 유저입니다.");
-    }
-
-    // 메모 삭제
-    const deletedMemo = await delete_(params.memoId);
+    const deletedMemo = await deleteMemoRepo(params.memoId);
     return deletedMemo;
   };
 
-  return { getMyMemos, createMemo, updateMemo, deleteMemo };
+  return { getAllMemos, createMemo, updateMemo, deleteMemo };
 };
 
 export type MemoServiceType = ReturnType<typeof createMemoService>;

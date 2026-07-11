@@ -1,8 +1,10 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -11,48 +13,42 @@ datasource db {
 }
 
 model User {
-  id                    Int                      @id @default(autoincrement())
-  email                 String                   @unique
-  username              String?
-  password              String
-  articles              Article[]
-  memos                 Memo[]
-  userRecommendedArticles UserRecommendedArticle[]
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  username  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles          Article[]
+  recommendArticles UserRecommendArticle[]
 }
 
 model Article {
-  id                      Int                      @id @default(autoincrement())
-  userId                  Int
-  title                   String
-  content                 String
-  createdAt               DateTime                 @default(now())
-  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userRecommendedArticles UserRecommendedArticle[]
-}
-
-model Memo {
   id        Int      @id @default(autoincrement())
-  userId    Int
   title     String
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  //onDelete: Cascade
-  //1. Cascade: When a user is deleted, all their memos will also be deleted.
-  //2. Set Null: When a user is deleted, the userId field in their memos will be set to null.
-  //3. Restrict: Prevent deletion of a user if they have associated memos.
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  // onDelete 옵션
+  // 1. Restict: 게시글이 남아있다면 유저 삭제 불가
+  // 2. Cascade: 유저가 삭제되면 게시글도 삭제된다.
+  // 3. SetNull: 유저가 삭제되어도 게시글이 남아있고 userId = null로 변경된다.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendedBy UserRecommendArticle[]
 }
 
-model UserRecommendedArticle {
+model UserRecommendArticle {
   id        Int      @id @default(autoincrement())
   userId    Int
   articleId Int
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-//사용자당 게시글 추천은 한 번만 가능하도록 unique 제약 조건을 추가합니다.
+
+  // 한 유저가 같은 게시글을 중복 추천할 수 없다.
   @@unique([userId, articleId])
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 }
