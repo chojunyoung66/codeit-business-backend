@@ -3,9 +3,14 @@ import { User } from "../../generated/prisma/client.js";
 export interface IUserRepo {
   findUserByEmail: (email: string) => Promise<User | null>;
   findUserById: (id: number) => Promise<User | null>;
+  findUserByRefreshToken: (refreshToken: string) => Promise<User | null>;
   createUser: (parmas: {
     email: string;
     password: string;
     username: string;
   }) => Promise<User>;
+  updateRefreshToken: (
+    userId: number,
+    refreshToken: string | null,
+  ) => Promise<void>;
 }

@@ -4,682 +4,186 @@ import type { IUserRepo } from "../contracts/user-repo.contract.js";
 import type { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import type { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 
+const fakeUser = {
+  id: 1,
+  email: "asd@asd.com",
+  password: "hashed_password",
+  username: "nick",
+  refreshToken: null as string | null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const createDeps = () => {
+  const findUserByEmail = jest
+    .fn<IUserRepo["findUserByEmail"]>()
+    .mockResolvedValue(null);
+  const createUser = jest
+    .fn<IUserRepo["createUser"]>()
+    .mockResolvedValue(fakeUser);
+  const signJwt = jest
+    .fn<IJwtUtil["signJwt"]>()
+    .mockReturnValueOnce("access_token")
+    .mockReturnValueOnce("refresh_token");
+  const hashUtil = {
+    hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
+    compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(true),
+  };
+  const updateRefreshToken = jest
+    .fn<IUserRepo["updateRefreshToken"]>()
+    .mockResolvedValue(undefined);
+  const findUserByRefreshToken = jest
+    .fn<IUserRepo["findUserByRefreshToken"]>()
+    .mockResolvedValue(null);
+  const verifyJwt = jest.fn<IJwtUtil["verifyJwt"]>();
+
+  const service = createAuthService(
+    findUserByEmail,
+    createUser,
+    signJwt,
+    hashUtil,
+    updateRefreshToken,
+    findUserByRefreshToken,
+    verifyJwt,
+  );
+
+  return {
+    service,
+    findUserByEmail,
+    createUser,
+    signJwt,
+    hashUtil,
+    updateRefreshToken,
+    findUserByRefreshToken,
+    verifyJwt,
+  };
+};
+
 describe("로그인", () => {
-  test("이메일과 비밀번호가 일치하면 JWT 토큰을 반환한다", async () => {
-    // 가짜 데이터 준비
-    const fakeUser = {
-      id: 1,
-      email: "asd@asd.com",
-      password: "hashed_password",
-      username: "nick",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const fakeToken = "asd";
+  test("해피패스: access/refresh를 발급하고 refresh를 DB에 저장한다", async () => {
+    const deps = createDeps();
+    deps.findUserByEmail.mockResolvedValue(fakeUser);
 
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockReturnValue(fakeToken);
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(true),
-    };
-
-    // 가짜 데이터를 주입해서 가상의 프로세스 검증
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-    const token = await signInService({
+    const result = await deps.service.signIn({
       email: "asd@asd.com",
       password: "1234",
     });
 
-    // 검증 결과가 예상과 같은지 확인
-    expect(token).toBe(fakeToken);
-    expect(fakeFindUserByEmail).toHaveBeenCalledWith("asd@asd.com");
-    expect(fakeBcryptUtil.compare).toHaveBeenCalledWith({
-      password: "1234",
-      hashedPassword: "hashed_password",
+    expect(result).toEqual({
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
     });
-    expect(fakeSignJwt).toHaveBeenCalledWith({
+    expect(deps.signJwt).toHaveBeenCalledWith({
       data: { userId: fakeUser.id },
-      expiresIn: 3600,
+      expiresIn: 15 * 60,
     });
+    expect(deps.signJwt).toHaveBeenCalledWith({
+      data: { userId: fakeUser.id, type: "refresh" },
+      expiresIn: 7 * 24 * 60 * 60,
+    });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(
+      fakeUser.id,
+      "refresh_token",
+    );
   });
 
   test("존재하지 않는 이메일이면 에러를 던지고 JWT를 발급하지 않는다", async () => {
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
+    const deps = createDeps();
 
     await expect(
-      signInService({ email: "notfound@asd.com", password: "1234" }),
+      deps.service.signIn({ email: "notfound@asd.com", password: "1234" }),
     ).rejects.toThrow("이메일 또는 비밀번호가 일치하지 않습니다");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
-  });
-
-  test("findUserByEmail이 undefined를 반환하면 에러를 던지고 JWT를 발급하지 않는다", async () => {
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(undefined as never);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signInService({ email: "asd@asd.com", password: "1234" }),
-    ).rejects.toThrow("이메일 또는 비밀번호가 일치하지 않습니다");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
+    expect(deps.signJwt).not.toHaveBeenCalled();
   });
 
   test("비밀번호가 일치하지 않으면 에러를 던지고 JWT를 발급하지 않는다", async () => {
-    const fakeUser = {
-      id: 1,
-      email: "asd@asd.com",
-      password: "hashed_password",
-      username: "nick",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
+    const deps = createDeps();
+    deps.findUserByEmail.mockResolvedValue(fakeUser);
+    deps.hashUtil.compare.mockResolvedValue(false);
 
     await expect(
-      signInService({ email: "asd@asd.com", password: "wrong-password" }),
+      deps.service.signIn({ email: "asd@asd.com", password: "wrong" }),
     ).rejects.toThrow("이메일 또는 비밀번호가 일치하지 않습니다");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
-  });
-
-  test("findUserByEmail이 거부(reject)되면 signInService도 해당 에러를 그대로 전파한다", async () => {
-    const dbError = new Error("DB 연결 실패");
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockRejectedValue(dbError);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signInService({ email: "asd@asd.com", password: "1234" }),
-    ).rejects.toThrow("DB 연결 실패");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
+    expect(deps.signJwt).not.toHaveBeenCalled();
   });
 });
 
 describe("회원가입", () => {
-  test("존재하지 않는 이메일이면 새 사용자를 생성하고 JWT 토큰을 반환한다", async () => {
-    const newUser = {
-      id: 2,
-      email: "newuser@asd.com",
-      password: "hashed_password",
-      username: "newuser@asd.com",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const fakeToken = "new-token";
+  test("해피패스: 새 사용자를 생성하고 토큰은 발급하지 않는다", async () => {
+    const deps = createDeps();
 
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(newUser);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockReturnValue(fakeToken);
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_password"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-    const token = await signUpService({
+    await deps.service.signUp({
       email: "newuser@asd.com",
       password: "5678",
-      username: "newuser@asd.com",
+      username: "newuser",
     });
 
-    expect(token).toBe(fakeToken);
-    expect(fakeFindUserByEmail).toHaveBeenCalledWith("newuser@asd.com");
-    expect(fakeBcryptUtil.hash).toHaveBeenCalledWith({
+    expect(deps.hashUtil.hash).toHaveBeenCalledWith({
       password: "5678",
       saltRounds: 10,
     });
-    expect(fakeCreateUser).toHaveBeenCalledWith({
+    expect(deps.createUser).toHaveBeenCalledWith({
       email: "newuser@asd.com",
-      password: "hashed_password",
-      username: "newuser@asd.com",
+      password: "hashed",
+      username: "newuser",
     });
-    expect(fakeSignJwt).toHaveBeenCalledWith({
-      data: { userId: newUser.id },
-      expiresIn: 3600,
-    });
+    expect(deps.signJwt).not.toHaveBeenCalled();
   });
 
   test("이미 가입된 이메일이면 에러를 던진다", async () => {
-    const existingUser = {
-      id: 1,
-      email: "existing@asd.com",
-      password: "hashed_password",
-      username: "existing",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(existingUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("token");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
+    const deps = createDeps();
+    deps.findUserByEmail.mockResolvedValue(fakeUser);
 
     await expect(
-      signUpService({
-        email: "existing@asd.com",
+      deps.service.signUp({
+        email: "asd@asd.com",
         password: "1234",
-        username: "existing",
+        username: "nick",
       }),
     ).rejects.toThrow("계정이 이미 존재합니다");
-    expect(fakeCreateUser).not.toHaveBeenCalled();
-    expect(fakeSignJwt).not.toHaveBeenCalled();
+    expect(deps.createUser).not.toHaveBeenCalled();
   });
+});
 
-  test("createUser가 실패하면 에러를 전파한다", async () => {
-    const dbError = new Error("DB 연결 실패");
+describe("토큰 갱신", () => {
+  test("해피패스: refresh 검증 후 기존 토큰을 폐기하고 새 access/refresh를 발급한다", async () => {
+    const deps = createDeps();
+    deps.verifyJwt.mockReturnValue({ userId: 1, type: "refresh" });
+    deps.findUserByRefreshToken.mockResolvedValue(fakeUser);
+    deps.signJwt
+      .mockReset()
+      .mockReturnValueOnce("new_access")
+      .mockReturnValueOnce("new_refresh");
 
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockRejectedValue(dbError);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("token");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_password"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
+    const result = await deps.service.refresh("old_refresh");
 
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signUpService({
-        email: "newuser@asd.com",
-        password: "1234",
-        username: "newuser",
-      }),
-    ).rejects.toThrow("DB 연결 실패");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
-  });
-
-  test("findUserByEmail이 거부(reject)되면 signUpService도 해당 에러를 그대로 전파한다", async () => {
-    const dbError = new Error("DB 조회 실패");
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockRejectedValue(dbError);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("token");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signUpService({
-        email: "newuser@asd.com",
-        password: "1234",
-        username: "newuser",
-      }),
-    ).rejects.toThrow("DB 조회 실패");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
-  });
-
-  test("signJwt가 예외를 발생하면 해당 에러를 전파한다", async () => {
-    const newUser = {
-      id: 2,
-      email: "newuser@asd.com",
-      password: "hashed_password",
-      username: "newuser@asd.com",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const jwtError = new Error("JWT 서명 실패");
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(newUser);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockImplementation(() => {
-        throw jwtError;
-      });
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_password"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signUpService({
-        email: "newuser@asd.com",
-        password: "1234",
-        username: "newuser",
-      }),
-    ).rejects.toThrow("JWT 서명 실패");
-  });
-
-  test("newUser.id가 undefined면 undefined 전달", async () => {
-    const newUser = {
-      id: undefined,
-      email: "newuser@asd.com",
-      password: "hashed_password",
-      username: "newuser@asd.com",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const fakeToken = "new-token";
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(newUser as never);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockReturnValue(fakeToken);
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_password"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    const token = await signUpService({
-      email: "newuser@asd.com",
-      password: "1234",
-      username: "newuser@asd.com",
-    });
-
-    expect(token).toBe(fakeToken);
-    expect(fakeSignJwt).toHaveBeenCalledWith({
-      data: { userId: undefined },
-      expiresIn: 3600,
+    expect(deps.verifyJwt).toHaveBeenCalledWith("old_refresh");
+    expect(deps.findUserByRefreshToken).toHaveBeenCalledWith("old_refresh");
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(1, "new_refresh");
+    expect(result).toEqual({
+      accessToken: "new_access",
+      refreshToken: "new_refresh",
     });
   });
 
-  test("bcryptUtil.compare가 거부(reject)되면 해당 에러를 전파한다", async () => {
-    const bcryptError = new Error("bcrypt 비교 실패");
-    const fakeUser = {
-      id: 1,
-      email: "asd@asd.com",
-      password: "hashed_password",
-      username: "nick",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  test("DB에 없는 refresh면 에러를 던진다", async () => {
+    const deps = createDeps();
+    deps.verifyJwt.mockReturnValue({ userId: 1, type: "refresh" });
+    deps.findUserByRefreshToken.mockResolvedValue(null);
 
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockRejectedValue(bcryptError),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
+    await expect(deps.service.refresh("stale_refresh")).rejects.toThrow(
+      "유효하지 않은 리프레시 토큰입니다",
     );
-
-    await expect(
-      signInService({ email: "asd@asd.com", password: "1234" }),
-    ).rejects.toThrow("bcrypt 비교 실패");
-    expect(fakeSignJwt).not.toHaveBeenCalled();
+    expect(deps.updateRefreshToken).not.toHaveBeenCalled();
   });
+});
 
-  test("signJwt가 예외를 발생하면 해당 에러를 전파한다", async () => {
-    const jwtError = new Error("JWT 서명 실패");
-    const fakeUser = {
-      id: 1,
-      email: "asd@asd.com",
-      password: "hashed_password",
-      username: "nick",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+describe("로그아웃", () => {
+  test("해피패스: 사용자 refresh 토큰을 DB에서 삭제한다", async () => {
+    const deps = createDeps();
 
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockImplementation(() => {
-        throw jwtError;
-      });
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(true),
-    };
+    await deps.service.signOut(1);
 
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signInService({ email: "asd@asd.com", password: "1234" }),
-    ).rejects.toThrow("JWT 서명 실패");
-  });
-
-  test("빈 문자열 비밀번호로 요청하면 bcryptUtil.compare에 빈 문자열이 전달된다", async () => {
-    const fakeUser = {
-      id: 1,
-      email: "asd@asd.com",
-      password: "hashed_password",
-      username: "nick",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(fakeUser);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signInService({ email: "asd@asd.com", password: "" }),
-    ).rejects.toThrow("이메일 또는 비밀번호가 일치하지 않습니다");
-    expect(fakeBcryptUtil.compare).toHaveBeenCalledWith({
-      password: "",
-      hashedPassword: "hashed_password",
-    });
-  });
-
-  test("빈 문자열 이메일로 요청하면 findUserByEmail에 빈 문자열이 전달된다", async () => {
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("asd");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signIn: signInService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signInService({ email: "", password: "1234" }),
-    ).rejects.toThrow("이메일 또는 비밀번호가 일치하지 않습니다");
-    expect(fakeFindUserByEmail).toHaveBeenCalledWith("");
-  });
-
-  test("bcryptUtil.hash가 거부(reject)되면 해당 에러를 전파한다", async () => {
-    const bcryptError = new Error("bcrypt 해시 실패");
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue({} as never);
-    const fakeSignJwt = jest.fn<IJwtUtil["signJwt"]>().mockReturnValue("token");
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockRejectedValue(bcryptError),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    await expect(
-      signUpService({
-        email: "newuser@asd.com",
-        password: "1234",
-        username: "newuser",
-      }),
-    ).rejects.toThrow("bcrypt 해시 실패");
-    expect(fakeCreateUser).not.toHaveBeenCalled();
-    expect(fakeSignJwt).not.toHaveBeenCalled();
-  });
-
-  test("빈 문자열 비밀번호로 요청하면 bcryptUtil.hash에 빈 문자열이 전달된다", async () => {
-    const newUser = {
-      id: 2,
-      email: "newuser@asd.com",
-      password: "hashed_password",
-      username: "newuser@asd.com",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const fakeToken = "new-token";
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(newUser);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockReturnValue(fakeToken);
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_empty"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    const token = await signUpService({
-      email: "newuser@asd.com",
-      password: "",
-      username: "newuser@asd.com",
-    });
-
-    expect(token).toBe(fakeToken);
-    expect(fakeBcryptUtil.hash).toHaveBeenCalledWith({
-      password: "",
-      saltRounds: 10,
-    });
-    expect(fakeCreateUser).toHaveBeenCalledWith({
-      email: "newuser@asd.com",
-      password: "hashed_empty",
-      username: "newuser@asd.com",
-    });
-  });
-
-  test("빈 문자열 이메일로 요청하면 findUserByEmail에 빈 문자열이 전달된다", async () => {
-    const newUser = {
-      id: 2,
-      email: "",
-      password: "hashed_password",
-      username: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const fakeToken = "new-token";
-
-    const fakeFindUserByEmail = jest
-      .fn<IUserRepo["findUserByEmail"]>()
-      .mockResolvedValue(null);
-    const fakeCreateUser = jest
-      .fn<IUserRepo["createUser"]>()
-      .mockResolvedValue(newUser);
-    const fakeSignJwt = jest
-      .fn<IJwtUtil["signJwt"]>()
-      .mockReturnValue(fakeToken);
-    const fakeBcryptUtil = {
-      hash: jest.fn<IHashUtil["hash"]>().mockResolvedValue("hashed_password"),
-      compare: jest.fn<IHashUtil["compare"]>().mockResolvedValue(false),
-    };
-
-    const { signUp: signUpService } = createAuthService(
-      fakeFindUserByEmail,
-      fakeCreateUser,
-      fakeSignJwt,
-      fakeBcryptUtil,
-    );
-
-    const token = await signUpService({
-      email: "",
-      password: "1234",
-      username: "",
-    });
-
-    expect(token).toBe(fakeToken);
-    expect(fakeFindUserByEmail).toHaveBeenCalledWith("");
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(1, null);
   });
 });

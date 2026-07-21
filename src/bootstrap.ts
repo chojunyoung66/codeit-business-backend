@@ -14,7 +14,13 @@ import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
 
 export const bootstrap = () => {
-  const { findUserByEmail, createUser, findUserById } = createUserRepo();
+  const {
+    findUserByEmail,
+    createUser,
+    findUserById,
+    findUserByRefreshToken,
+    updateRefreshToken,
+  } = createUserRepo();
   const {
     findAll,
     create,
@@ -28,11 +34,14 @@ export const bootstrap = () => {
     delete: deleteRecommendRepo,
   } = createRecommendRepo();
 
-  const { signIn, signUp } = createAuthService(
+  const { signIn, signUp, refresh, signOut } = createAuthService(
     findUserByEmail,
     createUser,
     signJwt,
     bcryptUtil,
+    updateRefreshToken,
+    findUserByRefreshToken,
+    jwtUtil.verifyJwt,
   );
   const { getMe } = createUserService(findUserById);
   const { getAllMemos, createMemo, updateMemo, deleteMemo } = createMemoService(
@@ -51,7 +60,13 @@ export const bootstrap = () => {
   );
 
   const authMiddleware = createAuthMiddleware(jwtUtil.verifyJwt);
-  const { router: authRouter } = createAuthController(signIn, signUp);
+  const { router: authRouter } = createAuthController(
+    signIn,
+    signUp,
+    refresh,
+    signOut,
+    authMiddleware,
+  );
   const { router: userRouter } = createUserController(getMe, authMiddleware);
   const { router: memoRouter } = createMemoController(
     getAllMemos,

@@ -25,6 +25,16 @@ export const createUserRepo = (): IUserRepo => {
     return foundUser;
   };
 
+  // 리프레시 토큰으로 사용자 조회
+  const findUserByRefreshToken: IUserRepo["findUserByRefreshToken"] = async (
+    refreshToken: string,
+  ) => {
+    const foundUser = await prismaClient.user.findUnique({
+      where: { refreshToken },
+    });
+    return foundUser;
+  };
+
   // 사용자 생성
   const createUser: IUserRepo["createUser"] = async (params) => {
     try {
@@ -51,5 +61,22 @@ export const createUserRepo = (): IUserRepo => {
     }
   };
 
-  return { findUserByEmail, findUserById, createUser };
+  // 리프레시 토큰 저장 또는 폐기
+  const updateRefreshToken: IUserRepo["updateRefreshToken"] = async (
+    userId,
+    refreshToken,
+  ) => {
+    await prismaClient.user.update({
+      where: { id: userId },
+      data: { refreshToken },
+    });
+  };
+
+  return {
+    findUserByEmail,
+    findUserById,
+    findUserByRefreshToken,
+    createUser,
+    updateRefreshToken,
+  };
 };
