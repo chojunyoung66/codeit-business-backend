@@ -14,9 +14,24 @@ const { authRouter, userRouter, memoRouter, recommendRouter } = bootstrap();
 
 const app = express();
 
+// credentials:true 일 때 origin은 반드시 구체 주소여야 함 (* 불가)
+const allowedOrigins = (
+  process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:3000"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    origin(origin, callback) {
+      // same-origin / 서버 도구(curl)처럼 Origin 없는 요청은 허용
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
   }),
 );
