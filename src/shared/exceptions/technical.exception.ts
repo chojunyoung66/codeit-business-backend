@@ -3,6 +3,7 @@ export enum TechnicalExceptionCode {
   TOKEN_EXPIRED = "TOKEN_EXPIRED",
   UNAUTHORIZED = "UNAUTHORIZED",
   EMAIL_DUPLICATED = "EMAIL_DUPLICATED",
+  LOGOUT_FAILED = "LOGOUT_FAILED",
 }
 
 export class TechnicalException extends Error {

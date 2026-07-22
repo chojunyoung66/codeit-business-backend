@@ -106,6 +106,8 @@ export const createAuthService = (
     // DB에 저장된 토큰과 일치하는지 확인
     const user = await findUserByRefreshToken(refreshToken);
     if (!user) {
+      // 토큰 재사용 공격 감지 — 해당 유저의 저장된 토큰 즉시 폐기
+      await updateRefreshToken(payload.userId, null);
       throw new BusinessException("유효하지 않은 리프레시 토큰입니다");
     }
 
@@ -126,8 +128,12 @@ export const createAuthService = (
   };
 
   const signOut = async (userId: number) => {
-    // 서버에 저장된 refresh 토큰 폐기
-    await updateRefreshToken(userId, null);
+    try {
+      // 서버에 저장된 refresh 토큰 폐기
+      await updateRefreshToken(userId, null);
+    } catch (err) {
+      throw new TechnicalException("로그아웃에 실패했습니다", TechnicalExceptionCode.LOGOUT_FAILED, err);
+    }
   };
 
   return { signIn, signUp, refresh, signOut };
