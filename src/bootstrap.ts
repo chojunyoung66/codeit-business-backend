@@ -12,6 +12,7 @@ import { createMemoRepo } from "./outbound/repos/memo.repo.js";
 import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
+import { cryptoUtil } from "./shared/utils/crypto.util.js";
 
 export const bootstrap = () => {
   const {
@@ -42,6 +43,7 @@ export const bootstrap = () => {
     updateRefreshToken,
     findUserByRefreshToken,
     jwtUtil.verifyJwt,
+    cryptoUtil,
   );
   const { getMe } = createUserService(findUserById);
   const { getAllMemos, createMemo, updateMemo, deleteMemo } = createMemoService(

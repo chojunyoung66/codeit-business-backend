@@ -4,6 +4,7 @@ import type { IUserRepo } from "../contracts/user-repo.contract.js";
 import type { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 import type { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
+import type { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
 
 const fakeUser = {
   id: 1,
@@ -37,6 +38,9 @@ const createDeps = () => {
     .fn<IUserRepo["findUserByRefreshToken"]>()
     .mockResolvedValue(null);
   const verifyJwt = jest.fn<IJwtUtil["verifyJwt"]>();
+  const cryptoUtil: ICryptoUtil = {
+    hash: jest.fn<ICryptoUtil["hash"]>().mockImplementation((token) => `hashed_${token}`),
+  };
 
   const service = createAuthService(
     findUserByEmail,
@@ -46,6 +50,7 @@ const createDeps = () => {
     updateRefreshToken,
     findUserByRefreshToken,
     verifyJwt,
+    cryptoUtil,
   );
 
   return {
@@ -57,6 +62,7 @@ const createDeps = () => {
     updateRefreshToken,
     findUserByRefreshToken,
     verifyJwt,
+    cryptoUtil,
   };
 };
 
@@ -75,7 +81,7 @@ describe("로그인", () => {
     expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
     expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id }, expiresIn: 15 * 60 });
     expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id, type: "refresh" }, expiresIn: 7 * 24 * 60 * 60 });
-    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "refresh_token");
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
   });
 
   test("존재하지 않는 이메일이면 에러를 던지고 JWT를 발급하지 않는다", async () => {
@@ -124,7 +130,7 @@ describe("토큰 갱신", () => {
     const result = await deps.service.refresh("old_refresh");
 
     expect(deps.verifyJwt).toHaveBeenCalledWith("old_refresh");
-    expect(deps.findUserByRefreshToken).toHaveBeenCalledWith("old_refresh");
+    expect(deps.findUserByRefreshToken).toHaveBeenCalledWith("hashed_old_refresh");
     expect(deps.updateRefreshToken).toHaveBeenCalledWith(1, "new_refresh");
     expect(result).toEqual({ accessToken: "new_access", refreshToken: "new_refresh" });
   });

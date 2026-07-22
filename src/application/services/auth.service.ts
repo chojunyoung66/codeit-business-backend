@@ -1,6 +1,7 @@
 import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
+import { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import {
   TechnicalException,
@@ -18,6 +19,7 @@ export const createAuthService = (
   updateRefreshToken: IUserRepo["updateRefreshToken"],
   findUserByRefreshToken: IUserRepo["findUserByRefreshToken"],
   verifyJwt: IJwtUtil["verifyJwt"],
+  cryptoUtil: ICryptoUtil,
 ) => {
   const signIn = async (params: { email: string; password: string }) => {
     const { email, password } = params;
@@ -47,8 +49,8 @@ export const createAuthService = (
       expiresIn: REFRESH_TOKEN_EXPIRES,
     });
 
-    // Refresh를 DB에 저장
-    await updateRefreshToken(foundUser.id, refreshToken);
+    // Refresh를 해시 후 DB에 저장 (원본 토큰은 클라이언트에만 존재)
+    await updateRefreshToken(foundUser.id, cryptoUtil.hash(refreshToken));
 
     return { accessToken, refreshToken };
   };
@@ -103,8 +105,8 @@ export const createAuthService = (
       throw new BusinessException("유효하지 않은 리프레시 토큰입니다");
     }
 
-    // DB에 저장된 토큰과 일치하는지 확인
-    const user = await findUserByRefreshToken(refreshToken);
+    // 입력 토큰을 해시해서 DB 저장값과 비교
+    const user = await findUserByRefreshToken(cryptoUtil.hash(refreshToken));
     if (!user) {
       // 토큰 재사용 공격 감지 — 해당 유저의 저장된 토큰 즉시 폐기
       await updateRefreshToken(payload.userId, null);
