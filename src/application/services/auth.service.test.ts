@@ -170,4 +170,10 @@ describe("로그아웃", () => {
       code: TechnicalExceptionCode.LOGOUT_FAILED,
     });
   });
+
+  test("이미 로그아웃된 사용자가 다시 로그아웃을 요청하면 정상 처리된다", async () => {
+    await deps.service.signOut(1);
+    await expect(deps.service.signOut(1)).resolves.toBeUndefined();
+    expect(deps.updateRefreshToken).toHaveBeenCalledTimes(2);
+  });
 });
