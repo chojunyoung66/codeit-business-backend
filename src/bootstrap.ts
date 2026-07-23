@@ -12,9 +12,19 @@ import { createMemoRepo } from "./outbound/repos/memo.repo.js";
 import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
+import { cryptoUtil } from "./shared/utils/crypto.util.js";
+import { googleUtil } from "./shared/utils/google.util.js";
 
 export const bootstrap = () => {
-  const { findUserByEmail, createUser, findUserById } = createUserRepo();
+  const {
+    findUserByEmail,
+    createUser,
+    findUserById,
+    findUserByRefreshToken,
+    findUserByGoogleId,
+    linkGoogleId,
+    updateRefreshToken,
+  } = createUserRepo();
   const {
     findAll,
     create,
@@ -28,11 +38,18 @@ export const bootstrap = () => {
     delete: deleteRecommendRepo,
   } = createRecommendRepo();
 
-  const { signIn, signUp } = createAuthService(
+  const { signIn, signUp, refresh, signOut, googleSignIn } = createAuthService(
     findUserByEmail,
     createUser,
     signJwt,
     bcryptUtil,
+    updateRefreshToken,
+    findUserByRefreshToken,
+    jwtUtil.verifyJwt,
+    cryptoUtil,
+    findUserByGoogleId,
+    googleUtil.verifyCredential,
+    linkGoogleId,
   );
   const { getMe } = createUserService(findUserById);
   const { getAllMemos, createMemo, updateMemo, deleteMemo } = createMemoService(
@@ -51,7 +68,14 @@ export const bootstrap = () => {
   );
 
   const authMiddleware = createAuthMiddleware(jwtUtil.verifyJwt);
-  const { router: authRouter } = createAuthController(signIn, signUp);
+  const { router: authRouter } = createAuthController(
+    signIn,
+    signUp,
+    signOut,
+    refresh,
+    authMiddleware,
+    googleSignIn,
+  );
   const { router: userRouter } = createUserController(getMe, authMiddleware);
   const { router: memoRouter } = createMemoController(
     getAllMemos,

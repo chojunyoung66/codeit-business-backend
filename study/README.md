@@ -1,3 +1,10 @@
+# Study notes
+
+- [Access + Refresh Token 강의 요약 (2026-07-21)](./lecture-2026-07-21-refresh-token.md)
+- [보안 기초](./SECURITY.md)
+
+---
+
 # 클로드 코드 기본 세팅
 
 1. 가격
