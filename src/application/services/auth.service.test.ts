@@ -4,6 +4,7 @@ import type { IUserRepo } from "../contracts/user-repo.contract.js";
 import type { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 import type { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
+import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import type { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
 import type { IGoogleUtil } from "../../shared/contracts/google-util.contract.js";
 
@@ -246,5 +247,30 @@ describe("Google 로그인", () => {
     );
     expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
     expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
+  });
+
+  test("유효하지 않은 credential이면 에러를 던지고 토큰을 발급하지 않는다", async () => {
+    deps.verifyGoogleCredential.mockRejectedValue(
+      new BusinessException("유효하지 않은 Google credential입니다"),
+    );
+
+    await expect(deps.service.googleSignIn("invalid_credential")).rejects.toThrow(
+      "유효하지 않은 Google credential입니다",
+    );
+    expect(deps.signJwt).not.toHaveBeenCalled();
+    expect(deps.updateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  test("신규 사용자 생성 시 이메일 중복이 발생하면 BusinessException을 던진다", async () => {
+    deps.findUserByGoogleId.mockResolvedValue(null);
+    deps.findUserByEmail.mockResolvedValue(null);
+    deps.createUser.mockRejectedValue(
+      new TechnicalException("duplicate", TechnicalExceptionCode.EMAIL_DUPLICATED),
+    );
+
+    await expect(deps.service.googleSignIn("google_credential")).rejects.toBeInstanceOf(
+      BusinessException,
+    );
+    expect(deps.signJwt).not.toHaveBeenCalled();
   });
 });

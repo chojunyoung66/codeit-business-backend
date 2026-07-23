@@ -157,8 +157,15 @@ export const createAuthService = (
         await linkGoogleId(existingUser.id, googleId);
         user = existingUser;
       } else {
-        // 3단계: 완전 신규 사용자 생성
-        user = await createUser({ email, username: name, password: randomUUID(), googleId });
+        // 3단계: 완전 신규 사용자 생성 (동시 요청으로 이메일 중복 시 BusinessException으로 변환)
+        try {
+          user = await createUser({ email, username: name, password: randomUUID(), googleId });
+        } catch (err) {
+          if (err instanceof TechnicalException && err.code === TechnicalExceptionCode.EMAIL_DUPLICATED) {
+            throw new BusinessException("이미 가입된 이메일입니다");
+          }
+          throw err;
+        }
       }
     }
 
