@@ -5,12 +5,14 @@ import type { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 import type { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
 import type { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
+import type { IGoogleUtil } from "../../shared/contracts/google-util.contract.js";
 
 const fakeUser = {
   id: 1,
   email: "asd@asd.com",
   password: "hashed_password",
   username: "nick",
+  googleId: null as string | null,
   refreshToken: null as string | null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -37,10 +39,19 @@ const createDeps = () => {
   const findUserByRefreshToken = jest
     .fn<IUserRepo["findUserByRefreshToken"]>()
     .mockResolvedValue(null);
+  const findUserByGoogleId = jest
+    .fn<IUserRepo["findUserByGoogleId"]>()
+    .mockResolvedValue(null);
+  const linkGoogleId = jest
+    .fn<IUserRepo["linkGoogleId"]>()
+    .mockResolvedValue(undefined);
   const verifyJwt = jest.fn<IJwtUtil["verifyJwt"]>();
   const cryptoUtil: ICryptoUtil = {
     hash: jest.fn<ICryptoUtil["hash"]>().mockImplementation((token) => `hashed_${token}`),
   };
+  const verifyGoogleCredential = jest
+    .fn<IGoogleUtil["verifyCredential"]>()
+    .mockResolvedValue({ googleId: "gid_1", email: "google@test.com", name: "Google User" });
 
   const service = createAuthService(
     findUserByEmail,
@@ -51,6 +62,9 @@ const createDeps = () => {
     findUserByRefreshToken,
     verifyJwt,
     cryptoUtil,
+    findUserByGoogleId,
+    verifyGoogleCredential,
+    linkGoogleId,
   );
 
   return {
@@ -61,8 +75,11 @@ const createDeps = () => {
     hashUtil,
     updateRefreshToken,
     findUserByRefreshToken,
+    findUserByGoogleId,
+    linkGoogleId,
     verifyJwt,
     cryptoUtil,
+    verifyGoogleCredential,
   };
 };
 
@@ -79,7 +96,7 @@ describe("로그인", () => {
     const result = await deps.service.signIn({ email: "asd@asd.com", password: "1234" });
 
     expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
-    expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id }, expiresIn: 15 * 60 });
+    expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id }, expiresIn: 10 });
     expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id, type: "refresh" }, expiresIn: 7 * 24 * 60 * 60 });
     expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
   });
@@ -181,5 +198,53 @@ describe("로그아웃", () => {
     await deps.service.signOut(1);
     await expect(deps.service.signOut(1)).resolves.toBeUndefined();
     expect(deps.updateRefreshToken).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("Google 로그인", () => {
+  test("해피패스: 기존 Google 사용자면 토큰을 발급한다", async () => {
+    deps.findUserByGoogleId.mockResolvedValue(fakeUser);
+    deps.signJwt.mockReset()
+      .mockReturnValueOnce("access_token")
+      .mockReturnValueOnce("refresh_token");
+
+    const result = await deps.service.googleSignIn("google_credential");
+
+    expect(deps.verifyGoogleCredential).toHaveBeenCalledWith("google_credential");
+    expect(deps.findUserByGoogleId).toHaveBeenCalledWith("gid_1");
+    expect(deps.createUser).not.toHaveBeenCalled();
+    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
+  });
+
+  test("해피패스: googleId 없이 동일 이메일 계정이 있으면 googleId를 연결하고 토큰을 발급한다", async () => {
+    deps.findUserByGoogleId.mockResolvedValue(null);
+    deps.findUserByEmail.mockResolvedValue(fakeUser);
+    deps.signJwt.mockReset()
+      .mockReturnValueOnce("access_token")
+      .mockReturnValueOnce("refresh_token");
+
+    const result = await deps.service.googleSignIn("google_credential");
+
+    expect(deps.linkGoogleId).toHaveBeenCalledWith(fakeUser.id, "gid_1");
+    expect(deps.createUser).not.toHaveBeenCalled();
+    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
+  });
+
+  test("해피패스: 신규 Google 사용자면 계정을 생성하고 토큰을 발급한다", async () => {
+    deps.findUserByGoogleId.mockResolvedValue(null);
+    deps.findUserByEmail.mockResolvedValue(null);
+    deps.createUser.mockResolvedValue(fakeUser);
+    deps.signJwt.mockReset()
+      .mockReturnValueOnce("access_token")
+      .mockReturnValueOnce("refresh_token");
+
+    const result = await deps.service.googleSignIn("google_credential");
+
+    expect(deps.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "google@test.com", username: "Google User", googleId: "gid_1" }),
+    );
+    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
   });
 });

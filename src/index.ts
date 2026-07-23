@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import {
   errorMiddleware,
   notFoundMiddleware,
@@ -36,6 +37,8 @@ app.use(
   }),
 );
 app.use(express.json());
+// Cookie 헤더를 파싱해 req.cookies에 넣는다 (signedCookies 미사용)
+app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(

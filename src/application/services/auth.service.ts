@@ -1,14 +1,16 @@
+import { randomUUID } from "crypto";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
 import { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 import { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
+import { IGoogleUtil } from "../../shared/contracts/google-util.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import {
   TechnicalException,
   TechnicalExceptionCode,
 } from "../../shared/exceptions/technical.exception.js";
 
-const ACCESS_TOKEN_EXPIRES = 15 * 60; // 15분
+const ACCESS_TOKEN_EXPIRES = 10; // 10초
 const REFRESH_TOKEN_EXPIRES = 7 * 24 * 60 * 60; // 7일
 
 export const createAuthService = (
@@ -20,6 +22,9 @@ export const createAuthService = (
   findUserByRefreshToken: IUserRepo["findUserByRefreshToken"],
   verifyJwt: IJwtUtil["verifyJwt"],
   cryptoUtil: ICryptoUtil,
+  findUserByGoogleId: IUserRepo["findUserByGoogleId"],
+  verifyGoogleCredential: IGoogleUtil["verifyCredential"],
+  linkGoogleId: IUserRepo["linkGoogleId"],
 ) => {
   const signIn = async (params: { email: string; password: string }) => {
     const { email, password } = params;
@@ -138,7 +143,36 @@ export const createAuthService = (
     }
   };
 
-  return { signIn, signUp, refresh, signOut };
+  const googleSignIn = async (credential: string) => {
+    // Google credential 검증 → { googleId, email, name }
+    const { googleId, email, name } = await verifyGoogleCredential(credential);
+
+    // 1단계: googleId로 기존 Google 연동 사용자 조회
+    let user = await findUserByGoogleId(googleId);
+
+    if (user === null) {
+      // 2단계: 동일 이메일 계정 조회 → 있으면 googleId 연결
+      const existingUser = await findUserByEmail(email);
+      if (existingUser !== null) {
+        await linkGoogleId(existingUser.id, googleId);
+        user = existingUser;
+      } else {
+        // 3단계: 완전 신규 사용자 생성
+        user = await createUser({ email, username: name, password: randomUUID(), googleId });
+      }
+    }
+
+    // Access / Refresh 토큰 발급
+    const accessToken = signJwt({ data: { userId: user.id }, expiresIn: ACCESS_TOKEN_EXPIRES });
+    const refreshToken = signJwt({ data: { userId: user.id, type: "refresh" }, expiresIn: REFRESH_TOKEN_EXPIRES });
+
+    // Refresh 해시 후 DB 저장
+    await updateRefreshToken(user.id, cryptoUtil.hash(refreshToken));
+
+    return { accessToken, refreshToken };
+  };
+
+  return { signIn, signUp, refresh, signOut, googleSignIn };
 };
 
 export type AuthServiceType = ReturnType<typeof createAuthService>;

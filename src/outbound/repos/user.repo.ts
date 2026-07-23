@@ -25,6 +25,13 @@ export const createUserRepo = (): IUserRepo => {
     return foundUser;
   };
 
+  // Google ID로 사용자 조회
+  const findUserByGoogleId: IUserRepo["findUserByGoogleId"] = async (
+    googleId: string,
+  ) => {
+    return prismaClient.user.findUnique({ where: { googleId } });
+  };
+
   // 리프레시 토큰으로 사용자 조회
   const findUserByRefreshToken: IUserRepo["findUserByRefreshToken"] = async (
     refreshToken: string,
@@ -43,6 +50,7 @@ export const createUserRepo = (): IUserRepo => {
           email: params.email,
           password: params.password,
           username: params.username,
+          googleId: params.googleId,
         },
       });
 
@@ -61,6 +69,11 @@ export const createUserRepo = (): IUserRepo => {
     }
   };
 
+  // 기존 계정에 Google ID 연결
+  const linkGoogleId: IUserRepo["linkGoogleId"] = async (userId, googleId) => {
+    await prismaClient.user.update({ where: { id: userId }, data: { googleId } });
+  };
+
   // 리프레시 토큰 저장 또는 폐기
   const updateRefreshToken: IUserRepo["updateRefreshToken"] = async (
     userId,
@@ -76,6 +89,8 @@ export const createUserRepo = (): IUserRepo => {
     findUserByEmail,
     findUserById,
     findUserByRefreshToken,
+    findUserByGoogleId,
+    linkGoogleId,
     createUser,
     updateRefreshToken,
   };

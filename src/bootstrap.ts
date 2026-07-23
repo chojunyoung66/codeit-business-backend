@@ -13,6 +13,7 @@ import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
 import { cryptoUtil } from "./shared/utils/crypto.util.js";
+import { googleUtil } from "./shared/utils/google.util.js";
 
 export const bootstrap = () => {
   const {
@@ -20,6 +21,8 @@ export const bootstrap = () => {
     createUser,
     findUserById,
     findUserByRefreshToken,
+    findUserByGoogleId,
+    linkGoogleId,
     updateRefreshToken,
   } = createUserRepo();
   const {
@@ -35,7 +38,7 @@ export const bootstrap = () => {
     delete: deleteRecommendRepo,
   } = createRecommendRepo();
 
-  const { signIn, signUp, refresh, signOut } = createAuthService(
+  const { signIn, signUp, refresh, signOut, googleSignIn } = createAuthService(
     findUserByEmail,
     createUser,
     signJwt,
@@ -44,6 +47,9 @@ export const bootstrap = () => {
     findUserByRefreshToken,
     jwtUtil.verifyJwt,
     cryptoUtil,
+    findUserByGoogleId,
+    googleUtil.verifyCredential,
+    linkGoogleId,
   );
   const { getMe } = createUserService(findUserById);
   const { getAllMemos, createMemo, updateMemo, deleteMemo } = createMemoService(
@@ -65,9 +71,10 @@ export const bootstrap = () => {
   const { router: authRouter } = createAuthController(
     signIn,
     signUp,
-    refresh,
     signOut,
+    refresh,
     authMiddleware,
+    googleSignIn,
   );
   const { router: userRouter } = createUserController(getMe, authMiddleware);
   const { router: memoRouter } = createMemoController(
