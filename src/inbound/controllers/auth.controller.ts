@@ -38,7 +38,7 @@ export const createAuthController = (
         signed: false,
       });
 
-      return res.json({ accessToken });
+      return res.json({ token: accessToken });
     },
   );
 
@@ -90,7 +90,7 @@ export const createAuthController = (
         signed: false,
       });
 
-      return res.json({ accessToken });
+      return res.json({ token: accessToken });
     },
   );
 
