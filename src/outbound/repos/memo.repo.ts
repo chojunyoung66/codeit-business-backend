@@ -56,5 +56,14 @@ export const createMemoRepo = (): IMemoRepo => {
     return deletedMemo;
   };
 
-  return { findAll, create, findById, update, delete: deleteMemo };
+  const findLatestByUserId: IMemoRepo["findLatestByUserId"] = async (userId, limit) => {
+    // 최근 메모를 최신순으로 limit개 조회
+    return prismaClient.article.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+  };
+
+  return { findAll, create, findById, update, delete: deleteMemo, findLatestByUserId };
 };

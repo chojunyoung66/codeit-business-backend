@@ -13,6 +13,7 @@ export const createMemoController = (
   createMemo: MemoServiceType["createMemo"],
   updateMemo: MemoServiceType["updateMemo"],
   deleteMemo: MemoServiceType["deleteMemo"],
+  analyzeMemos: MemoServiceType["analyzeMemos"],
   authMiddleware: AuthMiddlewareType,
 ) => {
   const router = Router();
@@ -44,6 +45,11 @@ export const createMemoController = (
       res.json({ memo });
     },
   );
+
+  router.get("/analyze", authMiddleware, async (req: Request, res: Response) => {
+    const analysis = await analyzeMemos(req.userId!);
+    res.json({ analysis });
+  });
 
   router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
     const memoId = parseInt(String(req.params.id));

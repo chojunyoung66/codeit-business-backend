@@ -4,6 +4,7 @@ import { IMemoRepo } from "../contracts/memo-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IAiClient } from "../contracts/ai-client.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
+import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
 
 describe("MemoService", () => {
   describe("getAllMemos", () => {
@@ -446,6 +447,64 @@ describe("MemoService", () => {
         { title: "첫번째", content: "내용1" },
       ]);
       expect(result).toBe(expectedAnalysis);
+    });
+
+    it("메모가 없으면 AI를 호출하지 않고 BusinessException을 던진다", async () => {
+      // 빈 메모 목록 반환
+      const mockFindLatestByUserId = jest
+        .fn<IMemoRepo["findLatestByUserId"]>()
+        .mockResolvedValue([]);
+
+      const mockAiAnalyzeMemos = jest.fn<IAiClient["analyzeMemos"]>();
+
+      // MemoService 생성
+      const memoService = createMemoService(
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        mockFindLatestByUserId,
+        mockAiAnalyzeMemos,
+      );
+
+      // 검증
+      await expect(memoService.analyzeMemos(1)).rejects.toThrow(
+        new BusinessException("분석할 메모가 없습니다."),
+      );
+      expect(mockAiAnalyzeMemos).not.toHaveBeenCalled();
+    });
+
+    it("AI 호출이 실패하면 TechnicalException(AI_ANALYSIS_FAILED)을 던진다", async () => {
+      // 메모 1개 반환
+      const mockFindLatestByUserId = jest
+        .fn<IMemoRepo["findLatestByUserId"]>()
+        .mockResolvedValue([
+          { id: 1, title: "메모", content: "내용", userId: 1, createdAt: new Date(), updatedAt: new Date() } as any,
+        ]);
+
+      // AI 호출 실패
+      const mockAiAnalyzeMemos = jest
+        .fn<IAiClient["analyzeMemos"]>()
+        .mockRejectedValue(new Error("OpenAI API error"));
+
+      // MemoService 생성
+      const memoService = createMemoService(
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        mockFindLatestByUserId,
+        mockAiAnalyzeMemos,
+      );
+
+      // 검증
+      const error = await memoService.analyzeMemos(1).catch((e) => e);
+      expect(error).toBeInstanceOf(TechnicalException);
+      expect((error as TechnicalException).code).toBe(TechnicalExceptionCode.AI_ANALYSIS_FAILED);
     });
   });
 });

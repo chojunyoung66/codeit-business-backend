@@ -9,6 +9,7 @@ import { createUserController } from "./inbound/controllers/user.controller.js";
 import { createAuthMiddleware } from "./inbound/middlewares/auth.middleware.js";
 import { createUserRepo } from "./outbound/repos/user.repo.js";
 import { createMemoRepo } from "./outbound/repos/memo.repo.js";
+import { createOpenAiMemoAnalyzer } from "./outbound/external/openai-memo-analyzer.js";
 import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
@@ -29,9 +30,11 @@ export const bootstrap = () => {
     findAll,
     create,
     findById,
+    findLatestByUserId,
     update,
     delete: deleteMemoRepo,
   } = createMemoRepo();
+  const { analyzeMemos: aiAnalyzeMemos } = createOpenAiMemoAnalyzer();
   const {
     findByUserIdAndArticleId,
     create: createRecommend,
@@ -52,13 +55,15 @@ export const bootstrap = () => {
     linkGoogleId,
   );
   const { getMe } = createUserService(findUserById);
-  const { getAllMemos, createMemo, updateMemo, deleteMemo } = createMemoService(
+  const { getAllMemos, createMemo, updateMemo, deleteMemo, analyzeMemos } = createMemoService(
     findAll,
     create,
     findUserById,
     findById,
     update,
     deleteMemoRepo,
+    findLatestByUserId,
+    aiAnalyzeMemos,
   );
   const { toggleRecommend } = createRecommendService(
     findById,
@@ -82,6 +87,7 @@ export const bootstrap = () => {
     createMemo,
     updateMemo,
     deleteMemo,
+    analyzeMemos,
     authMiddleware,
   );
   const { router: recommendRouter } = createRecommendController(
