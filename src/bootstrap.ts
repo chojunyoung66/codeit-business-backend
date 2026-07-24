@@ -9,7 +9,8 @@ import { createUserController } from "./inbound/controllers/user.controller.js";
 import { createAuthMiddleware } from "./inbound/middlewares/auth.middleware.js";
 import { createUserRepo } from "./outbound/repos/user.repo.js";
 import { createMemoRepo } from "./outbound/repos/memo.repo.js";
-import { createOpenAiMemoAnalyzer } from "./outbound/external/openai-memo-analyzer.js";
+import { createFakeMemoAnalyzer } from "./outbound/external/fake-memo-analyzer.js";
+import { createFakeContentModerator } from "./outbound/external/fake-content-moderator.js";
 import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
@@ -34,7 +35,8 @@ export const bootstrap = () => {
     update,
     delete: deleteMemoRepo,
   } = createMemoRepo();
-  const { analyzeMemos: aiAnalyzeMemos } = createOpenAiMemoAnalyzer();
+  const { analyzeMemos: aiAnalyzeMemos } = createFakeMemoAnalyzer();
+  const { isInappropriate } = createFakeContentModerator();
   const {
     findByUserIdAndArticleId,
     create: createRecommend,
@@ -64,6 +66,7 @@ export const bootstrap = () => {
     deleteMemoRepo,
     findLatestByUserId,
     aiAnalyzeMemos,
+    isInappropriate,
   );
   const { toggleRecommend } = createRecommendService(
     findById,
@@ -81,7 +84,7 @@ export const bootstrap = () => {
     authMiddleware,
     googleSignIn,
   );
-  const { router: userRouter } = createUserController(getMe, authMiddleware);
+  const { router: userRouter } = createUserController(getMe, analyzeMemos, authMiddleware);
   const { router: memoRouter } = createMemoController(
     getAllMemos,
     createMemo,

@@ -1,9 +1,9 @@
 import { IMemoRepo } from "../contracts/memo-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IAiClient } from "../contracts/ai-client.contract.js";
+import { IContentModerator } from "../contracts/content-moderator.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
-import { containsForbiddenKeyword } from "../domain/memo.js";
 
 export const createMemoService = (
   findAll: IMemoRepo["findAll"],
@@ -14,6 +14,7 @@ export const createMemoService = (
   deleteMemoRepo: IMemoRepo["delete"],
   findLatestByUserId: IMemoRepo["findLatestByUserId"],
   aiAnalyzeMemos: IAiClient["analyzeMemos"],
+  isInappropriate: IContentModerator["isInappropriate"],
 ) => {
   // 존재하는 모든 메모를 추천 개수, 내 추천 여부와 함께 조회
   const getAllMemos = async (userId: number) => {
@@ -27,8 +28,8 @@ export const createMemoService = (
     title: string;
     content: string;
   }) => {
-    // 금칙어 검증
-    if (containsForbiddenKeyword(params.title, params.content)) {
+    // AI 콘텐츠 검증
+    if (await isInappropriate({ title: params.title, content: params.content })) {
       throw new BusinessException("게시글을 작성할 수 없습니다.");
     }
 
@@ -66,10 +67,10 @@ export const createMemoService = (
       throw new BusinessException("존재하지 않는 유저입니다.");
     }
 
-    // 금칙어 검증
+    // AI 콘텐츠 검증
     const title = params.title ?? memo.title;
     const content = params.content ?? memo.content;
-    if (containsForbiddenKeyword(title, content)) {
+    if (await isInappropriate({ title, content })) {
       throw new BusinessException("게시글을 작성할 수 없습니다.");
     }
 

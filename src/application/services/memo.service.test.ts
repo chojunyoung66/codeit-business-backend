@@ -3,6 +3,7 @@ import { createMemoService } from "./memo.service.js";
 import { IMemoRepo } from "../contracts/memo-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IAiClient } from "../contracts/ai-client.contract.js";
+import { IContentModerator } from "../contracts/content-moderator.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
 
@@ -41,6 +42,7 @@ describe("MemoService", () => {
       // MemoService 생성
       const memoService = createMemoService(
         mockFindAll,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -89,6 +91,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // createMemo 호출
@@ -107,32 +110,34 @@ describe("MemoService", () => {
       });
     });
 
-    it("제목이나 내용에 금칙어가 포함되면 BusinessException을 던진다", async () => {
-      // Mock 데이터
-      const mockFindUserById = jest
-        .fn<IUserRepo["findUserById"]>()
-        .mockResolvedValue({ id: 1, email: "test@test.com" } as any);
+    it("AI가 부적절 콘텐츠로 판정하면 BusinessException을 던진다", async () => {
+      // AI 모더레이터가 부적절 판정
+      const mockIsInappropriate = jest
+        .fn<IContentModerator["isInappropriate"]>()
+        .mockResolvedValue(true);
 
       // MemoService 생성
       const memoService = createMemoService(
         jest.fn() as any,
         jest.fn() as any,
-        mockFindUserById,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
+        mockIsInappropriate,
       );
 
-      // 금칙어 포함 테스트
+      // 부적절 콘텐츠 판정 테스트
       await expect(
         memoService.createMemo({
           userId: 1,
-          title: "금칙어 테스트",
-          content: "내용",
+          title: "나쁜 제목",
+          content: "나쁜 내용",
         }),
       ).rejects.toThrow(new BusinessException("게시글을 작성할 수 없습니다."));
+      expect(mockIsInappropriate).toHaveBeenCalledWith({ title: "나쁜 제목", content: "나쁜 내용" });
     });
 
     it("해당 사용자가 존재하지 않으면 BusinessException을 던진다", async () => {
@@ -146,6 +151,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindUserById,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -209,6 +215,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출
@@ -258,6 +265,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출 - 다른 사용자(userId=2)가 업데이트 시도
@@ -273,7 +281,7 @@ describe("MemoService", () => {
       );
     });
 
-    it("금칙어가 포함된 내용으로 메모를 업데이트하려면 BusinessException을 던진다", async () => {
+    it("AI가 부적절 콘텐츠로 판정하면 BusinessException을 던진다", async () => {
       // 기존 메모 데이터
       const existingMemo = {
         id: 1,
@@ -292,6 +300,11 @@ describe("MemoService", () => {
         .fn<IUserRepo["findUserById"]>()
         .mockResolvedValue({ id: 1, email: "test@test.com" } as any);
 
+      // AI 모더레이터가 부적절 판정
+      const mockIsInappropriate = jest
+        .fn<IContentModerator["isInappropriate"]>()
+        .mockResolvedValue(true);
+
       // MemoService 생성
       const memoService = createMemoService(
         jest.fn() as any,
@@ -302,14 +315,15 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        mockIsInappropriate,
       );
 
-      // updateMemo 호출 - 금칙어 포함
+      // updateMemo 호출 - AI 부적절 판정
       await expect(
         memoService.updateMemo({
           memoId: 1,
           userId: 1,
-          title: "금칙어 테스트",
+          title: "나쁜 제목",
           content: "원래 내용",
         }),
       ).rejects.toThrow(new BusinessException("게시글을 작성할 수 없습니다."));
@@ -340,6 +354,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindUserById,
         mockFindById,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -390,6 +405,7 @@ describe("MemoService", () => {
         mockDelete,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // deleteMemo 호출
@@ -434,6 +450,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindLatestByUserId,
         mockAiAnalyzeMemos,
+        jest.fn() as any,
       );
 
       // analyzeMemos 호출
@@ -467,6 +484,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindLatestByUserId,
         mockAiAnalyzeMemos,
+        jest.fn() as any,
       );
 
       // 검증
@@ -499,6 +517,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindLatestByUserId,
         mockAiAnalyzeMemos,
+        jest.fn() as any,
       );
 
       // 검증
