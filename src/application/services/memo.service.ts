@@ -1,6 +1,8 @@
 import { IMemoRepo } from "../contracts/memo-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
+import { IAiClient } from "../contracts/ai-client.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
+import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
 import { containsForbiddenKeyword } from "../domain/memo.js";
 
 export const createMemoService = (
@@ -10,6 +12,8 @@ export const createMemoService = (
   findById: IMemoRepo["findById"],
   update: IMemoRepo["update"],
   deleteMemoRepo: IMemoRepo["delete"],
+  findLatestByUserId: IMemoRepo["findLatestByUserId"],
+  aiAnalyzeMemos: IAiClient["analyzeMemos"],
 ) => {
   // 존재하는 모든 메모를 추천 개수, 내 추천 여부와 함께 조회
   const getAllMemos = async (userId: number) => {
@@ -95,7 +99,32 @@ export const createMemoService = (
     return deletedMemo;
   };
 
-  return { getAllMemos, createMemo, updateMemo, deleteMemo };
+  // 최근 메모 3개 분석
+  const analyzeMemos = async (userId: number): Promise<string> => {
+    // 최근 메모 3개 조회
+    const memos = await findLatestByUserId(userId, 3);
+
+    // 메모 없으면 예외
+    if (memos.length === 0) {
+      throw new BusinessException("분석할 메모가 없습니다.");
+    }
+
+    // AI 분석 요청
+    try {
+      const result = await aiAnalyzeMemos(
+        memos.map(({ title, content }) => ({ title, content })),
+      );
+      return result;
+    } catch (err) {
+      throw new TechnicalException(
+        "AI 분석 중 오류가 발생했습니다.",
+        TechnicalExceptionCode.AI_ANALYSIS_FAILED,
+        err,
+      );
+    }
+  };
+
+  return { getAllMemos, createMemo, updateMemo, deleteMemo, analyzeMemos };
 };
 
 export type MemoServiceType = ReturnType<typeof createMemoService>;

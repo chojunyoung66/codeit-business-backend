@@ -14,4 +14,5 @@ export interface IMemoRepo {
     content?: string;
   }) => Promise<Article>;
   delete: (id: number) => Promise<Article>;
+  findLatestByUserId: (userId: number, limit: number) => Promise<Article[]>;
 }

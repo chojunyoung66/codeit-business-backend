@@ -2,6 +2,7 @@ import { describe, it, expect, jest } from "@jest/globals";
 import { createMemoService } from "./memo.service.js";
 import { IMemoRepo } from "../contracts/memo-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
+import { IAiClient } from "../contracts/ai-client.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 
 describe("MemoService", () => {
@@ -39,6 +40,8 @@ describe("MemoService", () => {
       // MemoService 생성
       const memoService = createMemoService(
         mockFindAll,
+        jest.fn() as any,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -83,6 +86,8 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // createMemo 호출
@@ -115,6 +120,8 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // 금칙어 포함 테스트
@@ -138,6 +145,8 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindUserById,
+        jest.fn() as any,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -197,6 +206,8 @@ describe("MemoService", () => {
         mockFindById,
         mockUpdate,
         jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출
@@ -244,6 +255,8 @@ describe("MemoService", () => {
         mockFindById,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출 - 다른 사용자(userId=2)가 업데이트 시도
@@ -286,6 +299,8 @@ describe("MemoService", () => {
         mockFindById,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출 - 금칙어 포함
@@ -324,6 +339,8 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindUserById,
         mockFindById,
+        jest.fn() as any,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
       );
@@ -370,6 +387,8 @@ describe("MemoService", () => {
         mockFindById,
         jest.fn() as any,
         mockDelete,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // deleteMemo 호출
@@ -382,6 +401,51 @@ describe("MemoService", () => {
       expect(result).toEqual(existingMemo);
       expect(mockFindById).toHaveBeenCalledWith(1);
       expect(mockDelete).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe("analyzeMemos", () => {
+    it("최근 메모 3개를 AI에 전달하고 분석 결과를 반환한다", async () => {
+      // 최근 메모 3개 목데이터
+      const recentMemos = [
+        { id: 3, title: "세번째", content: "내용3", userId: 1, createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, title: "두번째", content: "내용2", userId: 1, createdAt: new Date(), updatedAt: new Date() },
+        { id: 1, title: "첫번째", content: "내용1", userId: 1, createdAt: new Date(), updatedAt: new Date() },
+      ];
+      const expectedAnalysis = "당신의 메모는 주로 업무 관련 내용입니다.";
+
+      // Mock 데이터
+      const mockFindLatestByUserId = jest
+        .fn<IMemoRepo["findLatestByUserId"]>()
+        .mockResolvedValue(recentMemos as any);
+
+      const mockAiAnalyzeMemos = jest
+        .fn<IAiClient["analyzeMemos"]>()
+        .mockResolvedValue(expectedAnalysis);
+
+      // MemoService 생성
+      const memoService = createMemoService(
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        mockFindLatestByUserId,
+        mockAiAnalyzeMemos,
+      );
+
+      // analyzeMemos 호출
+      const result = await memoService.analyzeMemos(1);
+
+      // 검증
+      expect(mockFindLatestByUserId).toHaveBeenCalledWith(1, 3);
+      expect(mockAiAnalyzeMemos).toHaveBeenCalledWith([
+        { title: "세번째", content: "내용3" },
+        { title: "두번째", content: "내용2" },
+        { title: "첫번째", content: "내용1" },
+      ]);
+      expect(result).toBe(expectedAnalysis);
     });
   });
 });
