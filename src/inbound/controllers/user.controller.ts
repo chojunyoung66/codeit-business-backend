@@ -15,7 +15,13 @@ export const createUserController = (
     authMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
       const user = await getMe(req.userId!);
-      const analysis = await analyzeMemos(req.userId!);
+
+      // 메모가 없으면 분석 결과를 null로 반환 (예외 전파 X)
+      let analysis: string | null = null;
+      try {
+        analysis = await analyzeMemos(req.userId!);
+      } catch {}
+
       res.json({ me: user, analysis });
     },
   );
