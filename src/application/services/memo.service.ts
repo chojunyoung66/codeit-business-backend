@@ -3,7 +3,10 @@ import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IAiClient } from "../contracts/ai-client.contract.js";
 import { IContentModerator } from "../contracts/content-moderator.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
-import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
+import {
+  TechnicalException,
+  TechnicalExceptionCode,
+} from "../../shared/exceptions/technical.exception.js";
 
 export const createMemoService = (
   findAll: IMemoRepo["findAll"],
@@ -13,7 +16,8 @@ export const createMemoService = (
   update: IMemoRepo["update"],
   deleteMemoRepo: IMemoRepo["delete"],
   findLatestByUserId: IMemoRepo["findLatestByUserId"],
-  aiAnalyzeMemos: IAiClient["analyzeMemos"],
+  extractKeywords: IAiClient["extractKeywords"],
+  recommendTopics: IAiClient["recommendTopics"],
   isInappropriate: IContentModerator["isInappropriate"],
 ) => {
   // 존재하는 모든 메모를 추천 개수, 내 추천 여부와 함께 조회
@@ -29,7 +33,9 @@ export const createMemoService = (
     content: string;
   }) => {
     // AI 콘텐츠 검증
-    if (await isInappropriate({ title: params.title, content: params.content })) {
+    if (
+      await isInappropriate({ title: params.title, content: params.content })
+    ) {
       throw new BusinessException("게시글을 작성할 수 없습니다.");
     }
 
@@ -100,22 +106,23 @@ export const createMemoService = (
     return deletedMemo;
   };
 
-  // 최근 메모 3개 분석
+  // 최근 메모 10개 기반 관심 주제 추천 (2단계 프롬프트 체인)
   const analyzeMemos = async (userId: number): Promise<string> => {
-    // 최근 메모 3개 조회
-    const memos = await findLatestByUserId(userId, 3);
+    // 최근 메모 10개 조회
+    const memos = await findLatestByUserId(userId, 10);
 
     // 메모 없으면 예외
     if (memos.length === 0) {
       throw new BusinessException("분석할 메모가 없습니다.");
     }
 
-    // AI 분석 요청
     try {
-      const result = await aiAnalyzeMemos(
+      // Step 1: 관심 키워드 추출
+      const keywords = await extractKeywords(
         memos.map(({ title, content }) => ({ title, content })),
       );
-      return result;
+      // Step 2: 키워드 기반 새 주제 추천
+      return await recommendTopics(keywords);
     } catch (err) {
       throw new TechnicalException(
         "AI 분석 중 오류가 발생했습니다.",

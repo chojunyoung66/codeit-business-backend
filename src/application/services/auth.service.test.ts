@@ -3,7 +3,10 @@ import { createAuthService } from "./auth.service.js";
 import type { IUserRepo } from "../contracts/user-repo.contract.js";
 import type { IHashUtil } from "../../shared/contracts/hash-util.contract.js";
 import type { IJwtUtil } from "../../shared/contracts/jwt-util.contract.js";
-import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
+import {
+  TechnicalException,
+  TechnicalExceptionCode,
+} from "../../shared/exceptions/technical.exception.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 import type { ICryptoUtil } from "../../shared/contracts/crypto-util.contract.js";
 import type { IGoogleUtil } from "../../shared/contracts/google-util.contract.js";
@@ -48,11 +51,17 @@ const createDeps = () => {
     .mockResolvedValue(undefined);
   const verifyJwt = jest.fn<IJwtUtil["verifyJwt"]>();
   const cryptoUtil: ICryptoUtil = {
-    hash: jest.fn<ICryptoUtil["hash"]>().mockImplementation((token) => `hashed_${token}`),
+    hash: jest
+      .fn<ICryptoUtil["hash"]>()
+      .mockImplementation((token) => `hashed_${token}`),
   };
   const verifyGoogleCredential = jest
     .fn<IGoogleUtil["verifyCredential"]>()
-    .mockResolvedValue({ googleId: "gid_1", email: "google@test.com", name: "Google User" });
+    .mockResolvedValue({
+      googleId: "gid_1",
+      email: "google@test.com",
+      name: "Google User",
+    });
 
   const service = createAuthService(
     findUserByEmail,
@@ -94,12 +103,27 @@ describe("로그인", () => {
   test("해피패스: access/refresh를 발급하고 refresh를 DB에 저장한다", async () => {
     deps.findUserByEmail.mockResolvedValue(fakeUser);
 
-    const result = await deps.service.signIn({ email: "asd@asd.com", password: "1234" });
+    const result = await deps.service.signIn({
+      email: "asd@asd.com",
+      password: "1234",
+    });
 
-    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
-    expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id }, expiresIn: 10 });
-    expect(deps.signJwt).toHaveBeenCalledWith({ data: { userId: fakeUser.id, type: "refresh" }, expiresIn: 7 * 24 * 60 * 60 });
-    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
+    expect(result).toEqual({
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+    });
+    expect(deps.signJwt).toHaveBeenCalledWith({
+      data: { userId: fakeUser.id },
+      expiresIn: 60 * 60,
+    });
+    expect(deps.signJwt).toHaveBeenCalledWith({
+      data: { userId: fakeUser.id, type: "refresh" },
+      expiresIn: 7 * 24 * 60 * 60,
+    });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(
+      fakeUser.id,
+      "hashed_refresh_token",
+    );
   });
 
   test("존재하지 않는 이메일이면 에러를 던지고 JWT를 발급하지 않는다", async () => {
@@ -122,10 +146,21 @@ describe("로그인", () => {
 
 describe("회원가입", () => {
   test("해피패스: 새 사용자를 생성하고 토큰은 발급하지 않는다", async () => {
-    await deps.service.signUp({ email: "newuser@asd.com", password: "5678", username: "newuser" });
+    await deps.service.signUp({
+      email: "newuser@asd.com",
+      password: "5678",
+      username: "newuser",
+    });
 
-    expect(deps.hashUtil.hash).toHaveBeenCalledWith({ password: "5678", saltRounds: 10 });
-    expect(deps.createUser).toHaveBeenCalledWith({ email: "newuser@asd.com", password: "hashed", username: "newuser" });
+    expect(deps.hashUtil.hash).toHaveBeenCalledWith({
+      password: "5678",
+      saltRounds: 10,
+    });
+    expect(deps.createUser).toHaveBeenCalledWith({
+      email: "newuser@asd.com",
+      password: "hashed",
+      username: "newuser",
+    });
     expect(deps.signJwt).not.toHaveBeenCalled();
   });
 
@@ -133,7 +168,11 @@ describe("회원가입", () => {
     deps.findUserByEmail.mockResolvedValue(fakeUser);
 
     await expect(
-      deps.service.signUp({ email: "asd@asd.com", password: "1234", username: "nick" }),
+      deps.service.signUp({
+        email: "asd@asd.com",
+        password: "1234",
+        username: "nick",
+      }),
     ).rejects.toThrow("계정이 이미 존재합니다");
     expect(deps.createUser).not.toHaveBeenCalled();
   });
@@ -143,28 +182,44 @@ describe("토큰 갱신", () => {
   test("해피패스: refresh 검증 후 기존 토큰을 폐기하고 새 access/refresh를 발급한다", async () => {
     deps.verifyJwt.mockReturnValue({ userId: 1, type: "refresh" });
     deps.findUserByRefreshToken.mockResolvedValue(fakeUser);
-    deps.signJwt.mockReset().mockReturnValueOnce("new_access").mockReturnValueOnce("new_refresh");
+    deps.signJwt
+      .mockReset()
+      .mockReturnValueOnce("new_access")
+      .mockReturnValueOnce("new_refresh");
 
     const result = await deps.service.refresh("old_refresh");
 
     expect(deps.verifyJwt).toHaveBeenCalledWith("old_refresh");
-    expect(deps.findUserByRefreshToken).toHaveBeenCalledWith("hashed_old_refresh");
+    expect(deps.findUserByRefreshToken).toHaveBeenCalledWith(
+      "hashed_old_refresh",
+    );
     expect(deps.updateRefreshToken).toHaveBeenCalledWith(1, "new_refresh");
-    expect(result).toEqual({ accessToken: "new_access", refreshToken: "new_refresh" });
+    expect(result).toEqual({
+      accessToken: "new_access",
+      refreshToken: "new_refresh",
+    });
   });
 
   test("서명이 위조된 토큰이면 에러를 던지고 새 토큰을 발급하지 않는다", async () => {
-    deps.verifyJwt.mockImplementation(() => { throw new Error("invalid signature"); });
+    deps.verifyJwt.mockImplementation(() => {
+      throw new Error("invalid signature");
+    });
 
-    await expect(deps.service.refresh("forged_token")).rejects.toThrow("유효하지 않은 리프레시 토큰입니다");
+    await expect(deps.service.refresh("forged_token")).rejects.toThrow(
+      "유효하지 않은 리프레시 토큰입니다",
+    );
     expect(deps.signJwt).not.toHaveBeenCalled();
     expect(deps.updateRefreshToken).not.toHaveBeenCalled();
   });
 
   test("만료된 토큰이면 에러를 던지고 새 토큰을 발급하지 않는다", async () => {
-    deps.verifyJwt.mockImplementation(() => { throw new Error("jwt expired"); });
+    deps.verifyJwt.mockImplementation(() => {
+      throw new Error("jwt expired");
+    });
 
-    await expect(deps.service.refresh("expired_token")).rejects.toThrow("유효하지 않은 리프레시 토큰입니다");
+    await expect(deps.service.refresh("expired_token")).rejects.toThrow(
+      "유효하지 않은 리프레시 토큰입니다",
+    );
     expect(deps.signJwt).not.toHaveBeenCalled();
     expect(deps.updateRefreshToken).not.toHaveBeenCalled();
   });
@@ -173,7 +228,9 @@ describe("토큰 갱신", () => {
     deps.verifyJwt.mockReturnValue({ userId: 1, type: "refresh" });
     deps.findUserByRefreshToken.mockResolvedValue(null);
 
-    await expect(deps.service.refresh("stale_refresh")).rejects.toThrow("유효하지 않은 리프레시 토큰입니다");
+    await expect(deps.service.refresh("stale_refresh")).rejects.toThrow(
+      "유효하지 않은 리프레시 토큰입니다",
+    );
     expect(deps.updateRefreshToken).toHaveBeenCalledWith(1, null);
     expect(deps.signJwt).not.toHaveBeenCalled();
   });
@@ -189,7 +246,9 @@ describe("로그아웃", () => {
   test("리프레시 토큰 삭제가 실패하면 TechnicalException을 던진다", async () => {
     deps.updateRefreshToken.mockRejectedValue(new Error("DB connection lost"));
 
-    await expect(deps.service.signOut(1)).rejects.toBeInstanceOf(TechnicalException);
+    await expect(deps.service.signOut(1)).rejects.toBeInstanceOf(
+      TechnicalException,
+    );
     await expect(deps.service.signOut(1)).rejects.toMatchObject({
       code: TechnicalExceptionCode.LOGOUT_FAILED,
     });
@@ -205,23 +264,33 @@ describe("로그아웃", () => {
 describe("Google 로그인", () => {
   test("해피패스: 기존 Google 사용자면 토큰을 발급한다", async () => {
     deps.findUserByGoogleId.mockResolvedValue(fakeUser);
-    deps.signJwt.mockReset()
+    deps.signJwt
+      .mockReset()
       .mockReturnValueOnce("access_token")
       .mockReturnValueOnce("refresh_token");
 
     const result = await deps.service.googleSignIn("google_credential");
 
-    expect(deps.verifyGoogleCredential).toHaveBeenCalledWith("google_credential");
+    expect(deps.verifyGoogleCredential).toHaveBeenCalledWith(
+      "google_credential",
+    );
     expect(deps.findUserByGoogleId).toHaveBeenCalledWith("gid_1");
     expect(deps.createUser).not.toHaveBeenCalled();
-    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
-    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
+    expect(result).toEqual({
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+    });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(
+      fakeUser.id,
+      "hashed_refresh_token",
+    );
   });
 
   test("해피패스: googleId 없이 동일 이메일 계정이 있으면 googleId를 연결하고 토큰을 발급한다", async () => {
     deps.findUserByGoogleId.mockResolvedValue(null);
     deps.findUserByEmail.mockResolvedValue(fakeUser);
-    deps.signJwt.mockReset()
+    deps.signJwt
+      .mockReset()
       .mockReturnValueOnce("access_token")
       .mockReturnValueOnce("refresh_token");
 
@@ -229,24 +298,38 @@ describe("Google 로그인", () => {
 
     expect(deps.linkGoogleId).toHaveBeenCalledWith(fakeUser.id, "gid_1");
     expect(deps.createUser).not.toHaveBeenCalled();
-    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
+    expect(result).toEqual({
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+    });
   });
 
   test("해피패스: 신규 Google 사용자면 계정을 생성하고 토큰을 발급한다", async () => {
     deps.findUserByGoogleId.mockResolvedValue(null);
     deps.findUserByEmail.mockResolvedValue(null);
     deps.createUser.mockResolvedValue(fakeUser);
-    deps.signJwt.mockReset()
+    deps.signJwt
+      .mockReset()
       .mockReturnValueOnce("access_token")
       .mockReturnValueOnce("refresh_token");
 
     const result = await deps.service.googleSignIn("google_credential");
 
     expect(deps.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "google@test.com", username: "Google User", googleId: "gid_1" }),
+      expect.objectContaining({
+        email: "google@test.com",
+        username: "Google User",
+        googleId: "gid_1",
+      }),
     );
-    expect(result).toEqual({ accessToken: "access_token", refreshToken: "refresh_token" });
-    expect(deps.updateRefreshToken).toHaveBeenCalledWith(fakeUser.id, "hashed_refresh_token");
+    expect(result).toEqual({
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+    });
+    expect(deps.updateRefreshToken).toHaveBeenCalledWith(
+      fakeUser.id,
+      "hashed_refresh_token",
+    );
   });
 
   test("유효하지 않은 credential이면 에러를 던지고 토큰을 발급하지 않는다", async () => {
@@ -254,9 +337,9 @@ describe("Google 로그인", () => {
       new BusinessException("유효하지 않은 Google credential입니다"),
     );
 
-    await expect(deps.service.googleSignIn("invalid_credential")).rejects.toThrow(
-      "유효하지 않은 Google credential입니다",
-    );
+    await expect(
+      deps.service.googleSignIn("invalid_credential"),
+    ).rejects.toThrow("유효하지 않은 Google credential입니다");
     expect(deps.signJwt).not.toHaveBeenCalled();
     expect(deps.updateRefreshToken).not.toHaveBeenCalled();
   });
@@ -265,12 +348,15 @@ describe("Google 로그인", () => {
     deps.findUserByGoogleId.mockResolvedValue(null);
     deps.findUserByEmail.mockResolvedValue(null);
     deps.createUser.mockRejectedValue(
-      new TechnicalException("duplicate", TechnicalExceptionCode.EMAIL_DUPLICATED),
+      new TechnicalException(
+        "duplicate",
+        TechnicalExceptionCode.EMAIL_DUPLICATED,
+      ),
     );
 
-    await expect(deps.service.googleSignIn("google_credential")).rejects.toBeInstanceOf(
-      BusinessException,
-    );
+    await expect(
+      deps.service.googleSignIn("google_credential"),
+    ).rejects.toBeInstanceOf(BusinessException);
     expect(deps.signJwt).not.toHaveBeenCalled();
   });
 });

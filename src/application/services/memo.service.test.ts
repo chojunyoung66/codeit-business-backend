@@ -5,7 +5,10 @@ import { IUserRepo } from "../contracts/user-repo.contract.js";
 import { IAiClient } from "../contracts/ai-client.contract.js";
 import { IContentModerator } from "../contracts/content-moderator.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
-import { TechnicalException, TechnicalExceptionCode } from "../../shared/exceptions/technical.exception.js";
+import {
+  TechnicalException,
+  TechnicalExceptionCode,
+} from "../../shared/exceptions/technical.exception.js";
 
 describe("MemoService", () => {
   describe("getAllMemos", () => {
@@ -42,6 +45,7 @@ describe("MemoService", () => {
       // MemoService 생성
       const memoService = createMemoService(
         mockFindAll,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -92,6 +96,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // createMemo 호출
@@ -126,6 +131,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
         mockIsInappropriate,
       );
 
@@ -137,7 +143,10 @@ describe("MemoService", () => {
           content: "나쁜 내용",
         }),
       ).rejects.toThrow(new BusinessException("게시글을 작성할 수 없습니다."));
-      expect(mockIsInappropriate).toHaveBeenCalledWith({ title: "나쁜 제목", content: "나쁜 내용" });
+      expect(mockIsInappropriate).toHaveBeenCalledWith({
+        title: "나쁜 제목",
+        content: "나쁜 내용",
+      });
     });
 
     it("해당 사용자가 존재하지 않으면 BusinessException을 던진다", async () => {
@@ -151,6 +160,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindUserById,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -216,6 +226,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // updateMemo 호출
@@ -261,6 +272,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindUserById,
         mockFindById,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -315,6 +327,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
         mockIsInappropriate,
       );
 
@@ -354,6 +367,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         mockFindUserById,
         mockFindById,
+        jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
@@ -406,6 +420,7 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         jest.fn() as any,
+        jest.fn() as any,
       );
 
       // deleteMemo 호출
@@ -422,23 +437,30 @@ describe("MemoService", () => {
   });
 
   describe("analyzeMemos", () => {
-    it("최근 메모 3개를 AI에 전달하고 분석 결과를 반환한다", async () => {
-      // 최근 메모 3개 목데이터
-      const recentMemos = [
-        { id: 3, title: "세번째", content: "내용3", userId: 1, createdAt: new Date(), updatedAt: new Date() },
-        { id: 2, title: "두번째", content: "내용2", userId: 1, createdAt: new Date(), updatedAt: new Date() },
-        { id: 1, title: "첫번째", content: "내용1", userId: 1, createdAt: new Date(), updatedAt: new Date() },
-      ];
-      const expectedAnalysis = "당신의 메모는 주로 업무 관련 내용입니다.";
+    it("최근 메모 10개로 키워드를 추출하고, 키워드로 주제를 추천한다", async () => {
+      // 최근 메모 10개 목데이터
+      const recentMemos = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        title: `메모 ${i + 1}`,
+        content: `내용 ${i + 1}`,
+        userId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+      const expectedKeywords = "여행, 독서, 운동";
+      const expectedRecommendation =
+        "버킷리스트 작성, 독서 모임 참여를 추천합니다.";
 
       // Mock 데이터
       const mockFindLatestByUserId = jest
         .fn<IMemoRepo["findLatestByUserId"]>()
         .mockResolvedValue(recentMemos as any);
-
-      const mockAiAnalyzeMemos = jest
-        .fn<IAiClient["analyzeMemos"]>()
-        .mockResolvedValue(expectedAnalysis);
+      const mockExtractKeywords = jest
+        .fn<IAiClient["extractKeywords"]>()
+        .mockResolvedValue(expectedKeywords);
+      const mockRecommendTopics = jest
+        .fn<IAiClient["recommendTopics"]>()
+        .mockResolvedValue(expectedRecommendation);
 
       // MemoService 생성
       const memoService = createMemoService(
@@ -449,21 +471,21 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindLatestByUserId,
-        mockAiAnalyzeMemos,
+        mockExtractKeywords,
+        mockRecommendTopics,
         jest.fn() as any,
       );
 
       // analyzeMemos 호출
       const result = await memoService.analyzeMemos(1);
 
-      // 검증
-      expect(mockFindLatestByUserId).toHaveBeenCalledWith(1, 3);
-      expect(mockAiAnalyzeMemos).toHaveBeenCalledWith([
-        { title: "세번째", content: "내용3" },
-        { title: "두번째", content: "내용2" },
-        { title: "첫번째", content: "내용1" },
-      ]);
-      expect(result).toBe(expectedAnalysis);
+      // 검증: 10개 조회 → 키워드 추출 → 주제 추천 순서 확인
+      expect(mockFindLatestByUserId).toHaveBeenCalledWith(1, 10);
+      expect(mockExtractKeywords).toHaveBeenCalledWith(
+        recentMemos.map(({ title, content }) => ({ title, content })),
+      );
+      expect(mockRecommendTopics).toHaveBeenCalledWith(expectedKeywords);
+      expect(result).toBe(expectedRecommendation);
     });
 
     it("메모가 없으면 AI를 호출하지 않고 BusinessException을 던진다", async () => {
@@ -471,8 +493,7 @@ describe("MemoService", () => {
       const mockFindLatestByUserId = jest
         .fn<IMemoRepo["findLatestByUserId"]>()
         .mockResolvedValue([]);
-
-      const mockAiAnalyzeMemos = jest.fn<IAiClient["analyzeMemos"]>();
+      const mockExtractKeywords = jest.fn<IAiClient["extractKeywords"]>();
 
       // MemoService 생성
       const memoService = createMemoService(
@@ -483,7 +504,8 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindLatestByUserId,
-        mockAiAnalyzeMemos,
+        mockExtractKeywords,
+        jest.fn() as any,
         jest.fn() as any,
       );
 
@@ -491,7 +513,7 @@ describe("MemoService", () => {
       await expect(memoService.analyzeMemos(1)).rejects.toThrow(
         new BusinessException("분석할 메모가 없습니다."),
       );
-      expect(mockAiAnalyzeMemos).not.toHaveBeenCalled();
+      expect(mockExtractKeywords).not.toHaveBeenCalled();
     });
 
     it("AI 호출이 실패하면 TechnicalException(AI_ANALYSIS_FAILED)을 던진다", async () => {
@@ -499,13 +521,20 @@ describe("MemoService", () => {
       const mockFindLatestByUserId = jest
         .fn<IMemoRepo["findLatestByUserId"]>()
         .mockResolvedValue([
-          { id: 1, title: "메모", content: "내용", userId: 1, createdAt: new Date(), updatedAt: new Date() } as any,
+          {
+            id: 1,
+            title: "메모",
+            content: "내용",
+            userId: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any,
         ]);
 
-      // AI 호출 실패
-      const mockAiAnalyzeMemos = jest
-        .fn<IAiClient["analyzeMemos"]>()
-        .mockRejectedValue(new Error("OpenAI API error"));
+      // 키워드 추출 실패
+      const mockExtractKeywords = jest
+        .fn<IAiClient["extractKeywords"]>()
+        .mockRejectedValue(new Error("AI API error"));
 
       // MemoService 생성
       const memoService = createMemoService(
@@ -516,14 +545,17 @@ describe("MemoService", () => {
         jest.fn() as any,
         jest.fn() as any,
         mockFindLatestByUserId,
-        mockAiAnalyzeMemos,
+        mockExtractKeywords,
+        jest.fn() as any,
         jest.fn() as any,
       );
 
       // 검증
       const error = await memoService.analyzeMemos(1).catch((e) => e);
       expect(error).toBeInstanceOf(TechnicalException);
-      expect((error as TechnicalException).code).toBe(TechnicalExceptionCode.AI_ANALYSIS_FAILED);
+      expect((error as TechnicalException).code).toBe(
+        TechnicalExceptionCode.AI_ANALYSIS_FAILED,
+      );
     });
   });
 });

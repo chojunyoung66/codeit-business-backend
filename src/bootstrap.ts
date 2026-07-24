@@ -35,7 +35,7 @@ export const bootstrap = () => {
     update,
     delete: deleteMemoRepo,
   } = createMemoRepo();
-  const { analyzeMemos: aiAnalyzeMemos } = createFakeMemoAnalyzer();
+  const { extractKeywords, recommendTopics } = createFakeMemoAnalyzer();
   const { isInappropriate } = createFakeContentModerator();
   const {
     findByUserIdAndArticleId,
@@ -57,17 +57,19 @@ export const bootstrap = () => {
     linkGoogleId,
   );
   const { getMe } = createUserService(findUserById);
-  const { getAllMemos, createMemo, updateMemo, deleteMemo, analyzeMemos } = createMemoService(
-    findAll,
-    create,
-    findUserById,
-    findById,
-    update,
-    deleteMemoRepo,
-    findLatestByUserId,
-    aiAnalyzeMemos,
-    isInappropriate,
-  );
+  const { getAllMemos, createMemo, updateMemo, deleteMemo, analyzeMemos } =
+    createMemoService(
+      findAll,
+      create,
+      findUserById,
+      findById,
+      update,
+      deleteMemoRepo,
+      findLatestByUserId,
+      extractKeywords,
+      recommendTopics,
+      isInappropriate,
+    );
   const { toggleRecommend } = createRecommendService(
     findById,
     findByUserIdAndArticleId,
@@ -84,7 +86,11 @@ export const bootstrap = () => {
     authMiddleware,
     googleSignIn,
   );
-  const { router: userRouter } = createUserController(getMe, analyzeMemos, authMiddleware);
+  const { router: userRouter } = createUserController(
+    getMe,
+    analyzeMemos,
+    authMiddleware,
+  );
   const { router: memoRouter } = createMemoController(
     getAllMemos,
     createMemo,
