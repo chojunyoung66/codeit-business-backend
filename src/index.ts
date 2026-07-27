@@ -11,7 +11,8 @@ import { bootstrap } from "./bootstrap.js";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
-const { authRouter, userRouter, memoRouter, recommendRouter } = bootstrap();
+const { authRouter, userRouter, memoRouter, recommendRouter, orderRouter } =
+  bootstrap();
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/memos", memoRouter);
 app.use("/api/recommends", recommendRouter);
+app.use("/api/orders", orderRouter);
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
