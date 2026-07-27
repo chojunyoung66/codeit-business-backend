@@ -18,10 +18,10 @@ export const createOrderService = (
       throw new BusinessException("존재하지 않는 유저입니다.");
     }
 
-    // 이미 대기 중인 주문이 있으면 중복 생성 차단
+    // 이미 대기 중인 주문이 있으면 중복 생성 차단 (인증 실패가 아닌 충돌이므로 409)
     const pendingOrder = await findPendingByUserId(params.userId);
     if (pendingOrder) {
-      throw new BusinessException("이미 대기 중인 주문이 있습니다.");
+      throw new BusinessException("이미 대기 중인 주문이 있습니다.", 409);
     }
 
     // 클라이언트가 보낸 금액은 신뢰하지 않고 서버 고정 가격으로 생성

@@ -98,10 +98,15 @@ describe("OrderService", () => {
         mockCreate,
       );
 
-      // 검증: 중복 주문 생성 차단
-      await expect(orderService.createOrder({ userId: 1 })).rejects.toThrow(
-        new BusinessException("이미 대기 중인 주문이 있습니다."),
+      // 검증: 중복 주문 생성 차단 (인증 실패가 아니므로 409)
+      const error = await orderService
+        .createOrder({ userId: 1 })
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(BusinessException);
+      expect((error as BusinessException).message).toBe(
+        "이미 대기 중인 주문이 있습니다.",
       );
+      expect((error as BusinessException).status).toBe(409);
       expect(mockFindPendingByUserId).toHaveBeenCalledWith(1);
       expect(mockCreate).not.toHaveBeenCalled();
     });
