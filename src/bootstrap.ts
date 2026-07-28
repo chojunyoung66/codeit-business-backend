@@ -15,6 +15,7 @@ import { createFakeMemoAnalyzer } from "./outbound/external/fake-memo-analyzer.j
 import { createFakeContentModerator } from "./outbound/external/fake-content-moderator.js";
 import { createRecommendRepo } from "./outbound/repos/recommend.repo.js";
 import { createOrderRepo } from "./outbound/repos/order.repo.js";
+import { createTossPaymentClient } from "./outbound/external/toss-payment-client.js";
 import { bcryptUtil } from "./shared/utils/bcrypt.util.js";
 import { signJwt, jwtUtil } from "./shared/utils/jwt.util.js";
 import { cryptoUtil } from "./shared/utils/crypto.util.js";
@@ -29,6 +30,7 @@ export const bootstrap = () => {
     findUserByGoogleId,
     linkGoogleId,
     updateRefreshToken,
+    grantBadge,
   } = createUserRepo();
   const {
     findAll,
@@ -45,8 +47,13 @@ export const bootstrap = () => {
     create: createRecommend,
     delete: deleteRecommendRepo,
   } = createRecommendRepo();
-  const { create: createOrderRepoRecord, findPendingByUserId } =
-    createOrderRepo();
+  const {
+    create: createOrderRepoRecord,
+    findPendingByUserId,
+    findById: findOrderById,
+    markAsPaid,
+  } = createOrderRepo();
+  const { confirm: confirmPayment } = createTossPaymentClient();
 
   const { signIn, signUp, refresh, signOut, googleSignIn } = createAuthService(
     findUserByEmail,
@@ -81,10 +88,14 @@ export const bootstrap = () => {
     createRecommend,
     deleteRecommendRepo,
   );
-  const { createOrder } = createOrderService(
+  const { createOrder, confirmOrder } = createOrderService(
     findUserById,
     findPendingByUserId,
     createOrderRepoRecord,
+    findOrderById,
+    markAsPaid,
+    grantBadge,
+    confirmPayment,
   );
 
   const authMiddleware = createAuthMiddleware(jwtUtil.verifyJwt);
@@ -115,6 +126,7 @@ export const bootstrap = () => {
   );
   const { router: orderRouter } = createOrderController(
     createOrder,
+    confirmOrder,
     authMiddleware,
   );
 

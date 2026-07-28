@@ -16,4 +16,5 @@ export interface IUserRepo {
     userId: number,
     refreshToken: string | null,
   ) => Promise<void>;
+  grantBadge: (userId: number) => Promise<void>;
 }

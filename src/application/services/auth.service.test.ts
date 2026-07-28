@@ -20,6 +20,7 @@ const fakeUser = {
   refreshToken: null as string | null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  badgeGrantedAt: null as Date | null,
 };
 
 const createDeps = () => {

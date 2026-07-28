@@ -2,6 +2,7 @@ import { describe, it, expect, jest } from "@jest/globals";
 import { createOrderService } from "./order.service.js";
 import { IOrderRepo } from "../contracts/order-repo.contract.js";
 import { IUserRepo } from "../contracts/user-repo.contract.js";
+import { IPaymentClient } from "../contracts/payment-client.contract.js";
 import { BusinessException } from "../../shared/exceptions/business.exception.js";
 
 describe("OrderService", () => {
@@ -36,6 +37,10 @@ describe("OrderService", () => {
         mockFindUserById,
         mockFindPendingByUserId,
         mockCreate,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // createOrder 호출
@@ -60,6 +65,10 @@ describe("OrderService", () => {
         mockFindUserById,
         mockFindPendingByUserId,
         mockCreate,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // 검증: 유저 확인 단계에서 즉시 중단
@@ -96,6 +105,10 @@ describe("OrderService", () => {
         mockFindUserById,
         mockFindPendingByUserId,
         mockCreate,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
       );
 
       // 검증: 중복 주문 생성 차단 (인증 실패가 아니므로 409)
@@ -109,6 +122,68 @@ describe("OrderService", () => {
       expect((error as BusinessException).status).toBe(409);
       expect(mockFindPendingByUserId).toHaveBeenCalledWith(1);
       expect(mockCreate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("confirmOrder", () => {
+    it("주문 소유자와 금액을 확인한 뒤 결제를 승인하고 뱃지를 지급한다", async () => {
+      // 결제 대기 중인 주문
+      const pendingOrder = {
+        id: 1,
+        userId: 1,
+        amount: 10000,
+        status: "PENDING",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        paidAt: null,
+      };
+      const mockFindById = jest
+        .fn<IOrderRepo["findById"]>()
+        .mockResolvedValue(pendingOrder as any);
+
+      // 토스페이먼츠 결제 승인 성공
+      const mockConfirmPayment = jest
+        .fn<IPaymentClient["confirm"]>()
+        .mockResolvedValue({ status: "DONE" });
+
+      // 결제 완료로 갱신된 주문
+      const paidOrder = { ...pendingOrder, status: "PAID", paidAt: new Date() };
+      const mockMarkAsPaid = jest
+        .fn<IOrderRepo["markAsPaid"]>()
+        .mockResolvedValue(paidOrder as any);
+
+      const mockGrantBadge = jest
+        .fn<IUserRepo["grantBadge"]>()
+        .mockResolvedValue(undefined);
+
+      const orderService = createOrderService(
+        jest.fn() as any,
+        jest.fn() as any,
+        jest.fn() as any,
+        mockFindById,
+        mockMarkAsPaid,
+        mockGrantBadge,
+        mockConfirmPayment,
+      );
+
+      // confirmOrder 호출
+      const result = await orderService.confirmOrder({
+        orderId: 1,
+        userId: 1,
+        paymentKey: "test_payment_key",
+        amount: 10000,
+      });
+
+      // 검증
+      expect(result).toEqual(paidOrder);
+      expect(mockFindById).toHaveBeenCalledWith(1);
+      expect(mockConfirmPayment).toHaveBeenCalledWith({
+        paymentKey: "test_payment_key",
+        orderId: "order-1",
+        amount: 10000,
+      });
+      expect(mockMarkAsPaid).toHaveBeenCalledWith(1);
+      expect(mockGrantBadge).toHaveBeenCalledWith(1);
     });
   });
 });

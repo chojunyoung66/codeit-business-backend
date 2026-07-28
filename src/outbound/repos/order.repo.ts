@@ -21,5 +21,20 @@ export const createOrderRepo = (): IOrderRepo => {
     return pendingOrder;
   };
 
-  return { create, findPendingByUserId };
+  const findById: IOrderRepo["findById"] = async (id) => {
+    const order = await prismaClient.order.findUnique({
+      where: { id },
+    });
+    return order;
+  };
+
+  const markAsPaid: IOrderRepo["markAsPaid"] = async (id) => {
+    const paidOrder = await prismaClient.order.update({
+      where: { id },
+      data: { status: "PAID", paidAt: new Date() },
+    });
+    return paidOrder;
+  };
+
+  return { create, findPendingByUserId, findById, markAsPaid };
 };

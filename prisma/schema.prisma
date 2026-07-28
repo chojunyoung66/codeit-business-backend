@@ -21,6 +21,7 @@ model User {
   refreshToken String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  badgeGrantedAt DateTime?
 
   articles          Article[]
   recommendArticles UserRecommendArticle[]

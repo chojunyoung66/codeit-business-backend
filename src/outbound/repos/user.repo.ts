@@ -71,7 +71,10 @@ export const createUserRepo = (): IUserRepo => {
 
   // 기존 계정에 Google ID 연결
   const linkGoogleId: IUserRepo["linkGoogleId"] = async (userId, googleId) => {
-    await prismaClient.user.update({ where: { id: userId }, data: { googleId } });
+    await prismaClient.user.update({
+      where: { id: userId },
+      data: { googleId },
+    });
   };
 
   // 리프레시 토큰 저장 또는 폐기
@@ -85,6 +88,14 @@ export const createUserRepo = (): IUserRepo => {
     });
   };
 
+  // 뱃지 지급 (지급 시각 기록)
+  const grantBadge: IUserRepo["grantBadge"] = async (userId) => {
+    await prismaClient.user.update({
+      where: { id: userId },
+      data: { badgeGrantedAt: new Date() },
+    });
+  };
+
   return {
     findUserByEmail,
     findUserById,
@@ -93,5 +104,6 @@ export const createUserRepo = (): IUserRepo => {
     linkGoogleId,
     createUser,
     updateRefreshToken,
+    grantBadge,
   };
 };
